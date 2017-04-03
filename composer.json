@@ -1,0 +1,23 @@
+{
+  "name": "common-libs/file",
+  "description": "SimpleDirLister is a php lib and a fronted of these lib. You can get complete filetrees and informations about files. You can also show these infos in a clean way",
+  "minimum-stability": "stable",
+  "license": "GNU-GPL v3",
+  "authors": [
+    {
+      "name": "Profenter Systems",
+      "email": "service@profenter.de"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "common\\libs\\": "lib/",
+      "common\\libs\\io\\": "lib/"
+    }
+  },
+  "require": {
+    "league/flysystem": "^1.0",
+    "league/flysystem-cached-adapter": "^1.0",
+    "league/flysystem-webdav": "^1.0"
+  }
+}
