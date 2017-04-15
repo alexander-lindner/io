@@ -1,13 +1,13 @@
 <?php
 
-namespace common\io;
+namespace common\io\legacy;
 
 use LogicException;
 
 /**
  * Class Paths
  *
- * @package common\io
+ * @package common\io\legacy
  */
 class Paths {
 	/**
@@ -19,15 +19,15 @@ class Paths {
 	 * @return  string  normalized path
 	 * @see http://stackoverflow.com/a/20545583
 	 */
-	public static function normalize(string $path, string $separator = '\\/'): string {
+	public static function normalize($path, $separator = '\\/') {
 		$path       = str_replace("\\", "/", $path);
-		$normalized = preg_replace('#\p{C}+|^\./#u', '', $path);
-		$normalized = preg_replace('#/\.(?=/)|^\./|\./$#', '', $normalized);
-		$regex      = '#\/*[^/\.]+/\.\.#Uu';
+		$normalized = preg_replace('#\\p{C}+|^\\./#u', '', $path);
+		$normalized = preg_replace('#/\\.(?=/)|^\\./|\\./$#', '', $normalized);
+		$regex      = '#\\/*[^/\\.]+/\\.\\.#Uu';
 		while (preg_match($regex, $normalized)) {
 			$normalized = preg_replace($regex, '', $normalized);
 		}
-		if (preg_match('#/\.{2}|\.{2}/#', $normalized)) {
+		if (preg_match('#/\\.{2}|\\.{2}/#', $normalized)) {
 			throw new LogicException(
 				'Path is outside of the defined root, path: [' . $path . '], resolved: [' . $normalized . ']'
 			);
@@ -43,7 +43,7 @@ class Paths {
 	 *
 	 * @return string
 	 */
-	public static function getPath(string $path): string {
+	public static function getPath($path) {
 		$e = explode("/", $path);
 		unset($e[count($e) - 1]);
 
@@ -57,7 +57,7 @@ class Paths {
 	 *
 	 * @return mixed
 	 */
-	public static function getFile(string $path): string {
+	public static function getFile($path) {
 		$e = explode("/", $path);
 
 		return $e[count($e) - 1];
@@ -70,15 +70,15 @@ class Paths {
 	 *
 	 * @return string
 	 */
-	public static function getProtocol($path): string {
+	public static function getProtocol($path) {
 		$protocols = "";
 		foreach (Manager::getFilesystems() as $key => $filesystem) {
 			$protocols .= $key . ",";
 		}
 		$protocols = rtrim($protocols, ",");
-		$regex     = "/([$protocols]*)(:\\/\\/)/m";
+		$regex     = "/([{$protocols}]*)(:\\/\\/)/m";
 		if (!preg_match($regex, $path)) {
-			$path = "file://$path";
+			$path = "file://{$path}";
 		}
 
 		return explode("://", $path)[0] . "://";
@@ -97,14 +97,13 @@ class Paths {
 			$protocols .= $key . ",";
 		}
 		$protocols = rtrim($protocols, ",");
-		$regex     = "/([$protocols]*)(:\\/)/m";
+		$regex     = "/([{$protocols}]*)(:\\/)/m";
 		if (!preg_match($regex, $path)) {
-			$path = "file:/$path";
+			$path = "file:/{$path}";
 		}
 
 		return preg_split("/([a-zA-Z]*)(:\\/)/m", $path)[1];
 	}
-
 
 	/**
 	 * make a full featured path
@@ -114,7 +113,7 @@ class Paths {
 	 *
 	 * @return string
 	 */
-	public static function makePath(string $protocol, string $name): string {
+	public static function makePath($protocol, $name) {
 		return $protocol . "://" . $name;
 	}
 }

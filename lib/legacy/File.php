@@ -1,13 +1,13 @@
 <?php
 
-namespace common\io;
+namespace common\io\legacy;
 
 use League\Flysystem\Filesystem;
 
 /**
  * Class File
  *
- * @package common\io
+ * @package common\io\legacy
  */
 class File {
 	/**
@@ -29,11 +29,10 @@ class File {
 	 * @param string    $file
 	 * @param Directory $parent
 	 */
-	public function __construct(string $file, Directory $parent) {
+	public function __construct($file, Directory $parent) {
 		$this->directory = $parent;
 		$this->filePath  = $file;
-
-		$this->file = $parent->getDir();
+		$this->file      = $parent->getDir();
 	}
 
 	/**
@@ -43,7 +42,7 @@ class File {
 	 *
 	 * @return File
 	 */
-	public static function get(string $path): File {
+	public static function get($path) {
 		return new self(Paths::getFile($path), new Directory(Paths::getPath($path)));
 	}
 
@@ -52,7 +51,7 @@ class File {
 	 *
 	 * @return bool
 	 */
-	public function isFile(): bool {
+	public function isFile() {
 		return $this->file->has(Paths::makePath($this->directory->getProtocol(), $this->filePath));
 	}
 
@@ -61,7 +60,7 @@ class File {
 	 *
 	 * @return bool
 	 */
-	public function isReadable(): bool {
+	public function isReadable() {
 		return is_string($this->file->read(Paths::makePath($this->directory->getProtocol(), $this->filePath)));
 	}
 
@@ -70,7 +69,7 @@ class File {
 	 *
 	 * @return bool
 	 */
-	public function isWritable(): bool {
+	public function isWritable() {
 		return $this->file->getVisibility(
 				Paths::makePath($this->directory->getProtocol(), $this->filePath)
 			) == "public";
@@ -81,7 +80,7 @@ class File {
 	 *
 	 * @return string
 	 */
-	public function __toString(): string {
+	public function __toString() {
 		return $this->getPath();
 	}
 
@@ -90,7 +89,7 @@ class File {
 	 *
 	 * @return string
 	 */
-	public function getPath(): string {
+	public function getPath() {
 		return Paths::normalize(Paths::makePath($this->directory->getProtocol(), $this->filePath));
 	}
 
@@ -99,7 +98,7 @@ class File {
 	 *
 	 * @return int
 	 */
-	public function getSize(): int {
+	public function getSize() {
 		return $this->file->getSize(Paths::makePath($this->directory->getProtocol(), $this->filePath));
 	}
 
@@ -108,7 +107,7 @@ class File {
 	 *
 	 * @return string
 	 */
-	public function getMimeType(): string {
+	public function getMimeType() {
 		return $this->file->getMetadata(Paths::makePath($this->directory->getProtocol(), $this->filePath))["type"];
 	}
 
@@ -117,7 +116,7 @@ class File {
 	 *
 	 * @return int
 	 */
-	public function getModifiedTime(): int {
+	public function getModifiedTime() {
 		return $this->file->getTimestamp(Paths::makePath($this->directory->getProtocol(), $this->filePath));
 	}
 
@@ -126,7 +125,7 @@ class File {
 	 *
 	 * @return string
 	 */
-	public function getExtension(): string {
+	public function getExtension() {
 		$e = explode(".", $this->getName());
 
 		return $e[count($e) - 1];
@@ -137,7 +136,7 @@ class File {
 	 *
 	 * @return string
 	 */
-	public function getName(): string {
+	public function getName() {
 		$e = explode("/", $this->filePath);
 
 		return $e[count($e) - 1];
@@ -148,7 +147,7 @@ class File {
 	 *
 	 * @return string
 	 */
-	public function read(): string {
+	public function read() {
 		return $this->getContent();
 	}
 
@@ -157,7 +156,7 @@ class File {
 	 *
 	 * @return string
 	 */
-	public function getContent(): string {
+	public function getContent() {
 		return $this->file->read(Paths::makePath($this->directory->getProtocol(), $this->filePath));
 	}
 
@@ -168,7 +167,7 @@ class File {
 	 *
 	 * @return bool
 	 */
-	public function rename(string $newName): bool {
+	public function rename($newName) {
 		return $this->file->rename($this->filePath, $newName);
 	}
 
@@ -179,7 +178,7 @@ class File {
 	 *
 	 * @return $this|File
 	 */
-	public function move(Directory $to): File {
+	public function move(Directory $to) {
 		$this->file->move(
 			Paths::makePath($this->directory->getProtocol(), $this->filePath),
 			Paths::makePath($to->getProtocol(), $to->getPath() . "/" . $this->getName())
@@ -193,7 +192,7 @@ class File {
 	 *
 	 * @return Directory
 	 */
-	public function delete(): Directory {
+	public function delete() {
 		$this->file->delete(Paths::makePath($this->directory->getProtocol(), $this->filePath));
 
 		return $this->getDirectory();
@@ -204,7 +203,7 @@ class File {
 	 *
 	 * @return Directory
 	 */
-	public function getDirectory(): Directory {
+	public function getDirectory() {
 		if (is_object($this->directory) && !is_null($this->directory)) {
 			return $this->directory;
 		} else {
@@ -217,7 +216,7 @@ class File {
 	 *
 	 * @return string
 	 */
-	public function getParentDirectory(): string {
+	public function getParentDirectory() {
 		$ex = explode("/", $this->directory->getProtocol() . $this->getPath());
 		unset($ex[count($ex) - 1]);
 
@@ -231,7 +230,7 @@ class File {
 	 *
 	 * @return File
 	 */
-	public function copy(Directory $to): File {
+	public function copy(Directory $to) {
 		$this->file->copy(
 			Paths::makePath($this->directory->getProtocol(), $this->filePath),
 			Paths::makePath($to->getProtocol(), $to->getPath() . "/" . $this->getName())
@@ -245,7 +244,7 @@ class File {
 	 *
 	 * @return string
 	 */
-	public function md5(): string {
+	public function md5() {
 		return md5($this->getContent());
 	}
 
@@ -254,7 +253,7 @@ class File {
 	 *
 	 * @return string
 	 */
-	public function sha1(): string {
+	public function sha1() {
 		return sha1($this->getContent());
 	}
 }

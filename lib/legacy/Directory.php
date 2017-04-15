@@ -1,6 +1,6 @@
 <?php
 
-namespace common\io;
+namespace common\io\legacy;
 
 use League\Flysystem\Filesystem;
 use League\Flysystem\MountManager;
@@ -8,7 +8,7 @@ use League\Flysystem\MountManager;
 /**
  * Class Directory
  *
- * @package common\io
+ * @package common\io\legacy
  */
 class Directory {
 	/**
@@ -23,7 +23,6 @@ class Directory {
 	 * @var string
 	 */
 	private $dirPath;
-
 	/**
 	 * @var bool
 	 */
@@ -61,14 +60,14 @@ class Directory {
 	 *
 	 * @return MountManager
 	 */
-	public function getDir(): MountManager {
+	public function getDir() {
 		return $this->dir;
 	}
 
 	/**
 	 * @return string
 	 */
-	public function getProtocol(): string {
+	public function getProtocol() {
 		if ($this->isIsRoot()) {
 			return $this->protocol;
 		} else {
@@ -81,7 +80,7 @@ class Directory {
 	 *
 	 * @return bool
 	 */
-	public function isIsRoot(): bool {
+	public function isIsRoot() {
 		return $this->isRoot;
 	}
 
@@ -89,9 +88,9 @@ class Directory {
 	 * get Parent directory
 	 *
 	 * @return Directory
-	 * @throws \common\io\NoParentAvailableException
+	 * @throws \common\io\legacy\NoParentAvailableException
 	 */
-	public function getParent(): Directory {
+	public function getParent() {
 		return $this->parent();
 	}
 
@@ -99,9 +98,9 @@ class Directory {
 	 * get Parent directory
 	 *
 	 * @return Directory
-	 * @throws \common\io\NoParentAvailableException
+	 * @throws \common\io\legacy\NoParentAvailableException
 	 */
-	public function parent(): Directory {
+	public function parent() {
 		if ($this->isIsRoot() || is_null($this->parent)) {
 			throw new NoParentAvailableException();
 		}
@@ -123,7 +122,7 @@ class Directory {
 	 *
 	 * @return string
 	 */
-	public function getPath(): string {
+	public function getPath() {
 		return Paths::normalize($this->getCurrentPath());
 	}
 
@@ -132,7 +131,7 @@ class Directory {
 	 *
 	 * @return string
 	 */
-	private function getCurrentPath(): string {
+	private function getCurrentPath() {
 		$o     = $this;
 		$paths = [];
 		while (!$o->isIsRoot()) {
@@ -149,7 +148,7 @@ class Directory {
 	 *
 	 * @return string
 	 */
-	public function getRelativePath(): string {
+	public function getRelativePath() {
 		return $this->dirPath;
 	}
 
@@ -160,12 +159,9 @@ class Directory {
 	 *
 	 * @return array(@var int => @var File|Directory)
 	 */
-	public function listContents(bool $recursion = true): array {
+	public function listContents($recursion = true) {
 		$a        = [];
-		$contents = $this->dir->listContents(
-			Paths::makePath($this->getProtocol(), $this->dirPath . "."),
-			$recursion
-		);
+		$contents = $this->dir->listContents(Paths::makePath($this->getProtocol(), $this->dirPath . "."), $recursion);
 		foreach ($contents as $file) {
 			$file["path"] = "/" . ltrim($file["path"], '/');
 			if ($file["type"] == "file") {
@@ -185,7 +181,7 @@ class Directory {
 	 *
 	 * @return bool
 	 */
-	public function rename(string $newName): bool {
+	public function rename($newName) {
 		return $this->dir->rename(Paths::makePath($this->getProtocol(), $this->dirPath), $newName);
 	}
 
@@ -196,7 +192,7 @@ class Directory {
 	 *
 	 * @return Directory
 	 */
-	public function mkdir(string $path = ""): Directory {
+	public function mkdir($path = "") {
 		if (!empty($path)) {
 			$dir = new Directory(["object" => $this, "path" => $this->dirPath . "/" . $path]);
 			if (!$dir->isDirectory()) {
@@ -216,7 +212,7 @@ class Directory {
 	 *
 	 * @return bool
 	 */
-	public function isDirectory(): bool {
+	public function isDirectory() {
 		return $this->dir->has(Paths::makePath($this->getProtocol(), $this->dirPath));
 	}
 
@@ -226,7 +222,7 @@ class Directory {
 	 *
 	 * @return bool
 	 */
-	public function isFile(): bool {
+	public function isFile() {
 		return false;
 	}
 
@@ -235,12 +231,11 @@ class Directory {
 	 *
 	 * @return string
 	 */
-	public function getName(): string {
+	public function getName() {
 		$e = explode("/", $this->dirPath);
 
 		return $e[count($e) - 1];
 	}
-
 
 	/**
 	 * creates a file
@@ -250,7 +245,7 @@ class Directory {
 	 *
 	 * @return File
 	 */
-	public function createFile(string $name, string $content = ""): File {
+	public function createFile($name, $content = "") {
 		$this->getDir()->put(Paths::makePath($this->getProtocol(), $name), $content);
 
 		return new File($name, $this);
@@ -263,7 +258,7 @@ class Directory {
 	 *
 	 * @return Directory
 	 */
-	public function get(string $path): Directory {
+	public function get($path) {
 		$path = $this->dirPath . $path;
 		/**
 		 * @var \League\Flysystem\Directory
@@ -280,7 +275,7 @@ class Directory {
 	 *
 	 * @return File
 	 */
-	public function file(string $file): File {
+	public function file($file) {
 		return $this->getFile($file);
 	}
 
@@ -291,9 +286,8 @@ class Directory {
 	 *
 	 * @return File
 	 */
-	public function getFile(string $path): File {
+	public function getFile($path) {
 		$path = Paths::normalize($this->dirPath . $path);
-
 		/**
 		 * @var \League\Flysystem\Directory
 		 */
@@ -307,7 +301,7 @@ class Directory {
 	 *
 	 * @return Directory
 	 */
-	public function delete(): Directory {
+	public function delete() {
 		$this->dir->deleteDir(Paths::makePath($this->getProtocol(), $this->dirPath));
 		if ($this->isIsRoot()) {
 			return NULL;
