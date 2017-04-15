@@ -1,5 +1,5 @@
 {
-  "name": "common-libs/file",
+  "name": "common-libs/io",
   "description": "SimpleDirLister is a php lib and a fronted of these lib. You can get complete filetrees and informations about files. You can also show these infos in a clean way",
   "minimum-stability": "stable",
   "license": "GNU-GPL v3",
