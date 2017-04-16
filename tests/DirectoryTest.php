@@ -1,5 +1,11 @@
 <?php
+use common\io\Directory;
 
-class DirectoryTest extends PHPUnit_Framework_TestCase {
+require __DIR__ . '/../vendor/autoload.php';
 
+class DirectoryTest extends PHPUnit\Framework\TestCase {
+	public function testExample() {
+		$dir = new Directory(".");
+		self::assertObjectHasAttribute("parent", $dir);
+	}
 }

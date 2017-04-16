@@ -4,6 +4,7 @@ php:
   - '5.6'
   - '7.0'
   - '7.1'
+  - hhvm
 branches:
   except:
   - gh-pages
@@ -25,3 +26,9 @@ after_success:
 - cd $TRAVIS_BUILD_DIR
 - chmod +x makeDocs.sh
 - "./makeDocs.sh"
+- bash <(curl -s https://codecov.io/bash)
+script:
+ - vendor/bin/phpunit --coverage-clover=coverage.xml
+before_script:
+ - travis_retry composer self-update
+ - travis_retry composer install --no-interaction --prefer-source --dev
