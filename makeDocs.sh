@@ -3,7 +3,7 @@ echo 'Setting up the script...'
 
 set -e
 
-find . -name \*.php -exec php -l "{}" \;
+find lib/ -name \*.php -exec php -l "{}" \;
 
 
 echo "" > .nojekyll
