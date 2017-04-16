@@ -8,7 +8,7 @@ branches:
   - gh-pages
 env:
   global:
-  - GH_REPO_NAME: user
+  - GH_REPO_NAME: io
   - DOXYFILE: "$TRAVIS_BUILD_DIR/Doxyfile"
   - GH_REPO_REF: github.com/common-libs/io/
   - secure: fsAUXbpJsAjrt3aZ8FHHDO/5yT6S373Y7UXlXVRJDsKPysg86VlBavSDx70Nr2noHVEQNiGy98+cmr9pbJHH7Nrt+88yn1KFy87LQHw3xNT9bpPuunyNTeZm/uDpbSBd7V3YWoj6uHp4d47umTY9QZWlrBM4HOwPupfWn8dcE+WlPhzGsymnBCWG+rFb7tpdJs6Ch5Mp7KzS8aHG97lq6A9DGcx5fvyb0uDKcX20v71SaHvE2cZ7ti3qz6cW5s7e4Dqj/g62Fvg5tKfI+ywBzLi9+E7oi2/xJTfO9QMl4dXfZyIZq2P1xrq+YSMqYb6zBT85RYXVOzFpAIg6dWF8RijFlnyimhjJ102Zlr3krssP65q1IuiMpGBy+sl9rZEhCv6PhjsvaN0cLGjqlWsXI6HSxurXdyqlTWHFTzvlumeyUhLQCUaCmF6oWH0r7asltN0Ca/r1HBuMfueHi29qNwrZSsEk8xa9nId6OzaYDG80bmYQ/LQrWLbkOc1oleonbw4pAiJN3elWN/XOwLGojJzT4WGmpxNpM+ZyKS33dP8DN2E7ySZ6a5LSAhQNWKjD5IEfi3xZtUaHwih1JPyAkk86xmd6kRXeWLzF4bzfZXLg8ycZ0NM8GsDP/C+IiI92qtFmCr3aCo/qg87/knNhYUjZfUh/jpuQNRifdT3q5jc=
