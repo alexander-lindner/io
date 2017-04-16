@@ -55,7 +55,7 @@ class Manager {
 	 *
 	 * @return void
 	 */
-	public static function addAdapter(string $name, AdapterInterface $adapter): void {
+	public static function addAdapter(string $name, AdapterInterface $adapter) {
 		$adapter = new Filesystem($adapter);
 		if (is_null(static::$manager) && empty(self::$filesystems)) {
 			self::init();
