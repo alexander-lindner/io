@@ -9,4 +9,14 @@
     <logging>
         <log type="coverage-clover" target="clover.xml"/>
     </logging>
+    <filter>
+        <whitelist>
+            <directory suffix=".php">lib/</directory>
+        </whitelist>
+    </filter>
+    <testsuites>
+        <testsuite name="Application Test Suite">
+            <directory>./tests/</directory>
+        </testsuite>
+    </testsuites>
 </phpunit>

@@ -25,6 +25,8 @@ rm -rf *
 
 cp -r ../../docs/ .
 
+cd docs
+
 if [ -d "html" ] && [ -f "html/index.html" ]; then
 
     echo 'Uploading documentation to the gh-pages branch...'
