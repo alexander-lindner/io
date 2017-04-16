@@ -25,5 +25,3 @@ after_success:
 - cd $TRAVIS_BUILD_DIR
 - chmod +x makeDocs.sh
 - "./makeDocs.sh"
-script:
-- php -l src/Config.php

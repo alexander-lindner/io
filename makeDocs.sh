@@ -3,6 +3,9 @@ echo 'Setting up the script...'
 
 set -e
 
+find . -name \*.php -exec php -l "{}" \;
+
+
 echo "" > .nojekyll
 echo 'Generating Doxygen code documentation...'
 doxygen $DOXYFILE 2>&1 | tee doxygen.log
