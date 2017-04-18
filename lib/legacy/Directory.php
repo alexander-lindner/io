@@ -123,33 +123,16 @@ class Directory {
 	 * @return string
 	 */
 	public function getPath() {
-		return Paths::normalize($this->getCurrentPath());
+		return Paths::normalize($this->dirPath);
 	}
 
 	/**
-	 * return current virtual path
+	 * get current path with protocol
 	 *
 	 * @return string
 	 */
-	private function getCurrentPath() {
-		$o     = $this;
-		$paths = [];
-		while (!$o->isIsRoot()) {
-			$paths[] = $o->getRelativePath();
-			$o       = $o->getParent();
-		}
-		$paths[] = $o->getRelativePath();
-
-		return implode("/", array_reverse($paths));
-	}
-
-	/**
-	 * get current relative path
-	 *
-	 * @return string
-	 */
-	public function getRelativePath() {
-		return $this->dirPath;
+	public function getFullPath() {
+		return Paths::normalize(Paths::makePath($this->getProtocol(), $this->getPath()));
 	}
 
 	/**
@@ -232,7 +215,7 @@ class Directory {
 	 * @return string
 	 */
 	public function getName() {
-		$e = explode("/", $this->dirPath);
+		$e = explode("/", Paths::normalize($this->dirPath));
 
 		return $e[count($e) - 1];
 	}

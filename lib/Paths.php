@@ -32,8 +32,9 @@ class Paths {
 				'Path is outside of the defined root, path: [' . $path . '], resolved: [' . $normalized . ']'
 			);
 		}
+		$path = trim($normalized, $separator);
 
-		return trim($normalized, $separator);
+		return preg_replace('/([A-Za-z]*?):\/\/(\/*)(.*)/', '$1://$3', $path);
 	}
 
 	/**

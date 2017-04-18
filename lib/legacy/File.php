@@ -70,9 +70,7 @@ class File {
 	 * @return bool
 	 */
 	public function isWritable() {
-		return $this->file->getVisibility(
-				Paths::makePath($this->directory->getProtocol(), $this->filePath)
-			) == "public";
+		return $this->file->getVisibility(Paths::makePath($this->directory->getProtocol(), $this->filePath)) == "public";
 	}
 
 	/**
@@ -90,7 +88,16 @@ class File {
 	 * @return string
 	 */
 	public function getPath() {
-		return Paths::normalize(Paths::makePath($this->directory->getProtocol(), $this->filePath));
+		return Paths::normalize($this->filePath);
+	}
+
+	/**
+	 * get current path with protocol
+	 *
+	 * @return string
+	 */
+	public function getFullPath() {
+		return Paths::normalize(Paths::makePath($this->directory->getProtocol(), $this->getPath()));
 	}
 
 	/**
@@ -108,7 +115,7 @@ class File {
 	 * @return string
 	 */
 	public function getMimeType() {
-		return $this->file->getMetadata(Paths::makePath($this->directory->getProtocol(), $this->filePath))["type"];
+		return $this->file->getMimetype(Paths::makePath($this->directory->getProtocol(), $this->filePath));
 	}
 
 	/**
@@ -179,10 +186,7 @@ class File {
 	 * @return $this|File
 	 */
 	public function move(Directory $to) {
-		$this->file->move(
-			Paths::makePath($this->directory->getProtocol(), $this->filePath),
-			Paths::makePath($to->getProtocol(), $to->getPath() . "/" . $this->getName())
-		);
+		$this->file->move(Paths::makePath($this->directory->getProtocol(), $this->filePath), Paths::makePath($to->getProtocol(), $to->getPath() . "/" . $this->getName()));
 
 		return new File($to->getPath() . "/" . $this->getName(), $to);
 	}
@@ -231,10 +235,7 @@ class File {
 	 * @return File
 	 */
 	public function copy(Directory $to) {
-		$this->file->copy(
-			Paths::makePath($this->directory->getProtocol(), $this->filePath),
-			Paths::makePath($to->getProtocol(), $to->getPath() . "/" . $this->getName())
-		);
+		$this->file->copy(Paths::makePath($this->directory->getProtocol(), $this->filePath), Paths::makePath($to->getProtocol(), $to->getPath() . "/" . $this->getName()));
 
 		return new File($to->getPath() . "/" . $this->getName(), $to);
 	}
@@ -255,5 +256,14 @@ class File {
 	 */
 	public function sha1() {
 		return sha1($this->getContent());
+	}
+
+	/**
+	 * check if this dir exists
+	 *
+	 * @return bool
+	 */
+	public function isDirectory() {
+		return false;
 	}
 }

@@ -91,7 +91,16 @@ class File {
 	 * @return string
 	 */
 	public function getPath(): string {
-		return Paths::normalize(Paths::makePath($this->directory->getProtocol(), $this->filePath));
+		return Paths::normalize($this->filePath);
+	}
+
+	/**
+	 * get current path with protocol
+	 *
+	 * @return string
+	 */
+	public function getFullPath(): string {
+		return Paths::normalize(Paths::makePath($this->directory->getProtocol(), $this->getPath()));
 	}
 
 	/**
@@ -109,7 +118,7 @@ class File {
 	 * @return string
 	 */
 	public function getMimeType(): string {
-		return $this->file->getMetadata(Paths::makePath($this->directory->getProtocol(), $this->filePath))["type"];
+		return $this->file->getMimetype(Paths::makePath($this->directory->getProtocol(), $this->filePath));
 	}
 
 	/**
@@ -256,5 +265,14 @@ class File {
 	 */
 	public function sha1(): string {
 		return sha1($this->getContent());
+	}
+
+	/**
+	 * check if this dir exists
+	 *
+	 * @return bool
+	 */
+	public function isDirectory(): bool {
+		return false;
 	}
 }

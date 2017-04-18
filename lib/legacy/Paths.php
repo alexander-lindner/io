@@ -28,12 +28,11 @@ class Paths {
 			$normalized = preg_replace($regex, '', $normalized);
 		}
 		if (preg_match('#/\\.{2}|\\.{2}/#', $normalized)) {
-			throw new LogicException(
-				'Path is outside of the defined root, path: [' . $path . '], resolved: [' . $normalized . ']'
-			);
+			throw new LogicException('Path is outside of the defined root, path: [' . $path . '], resolved: [' . $normalized . ']');
 		}
+		$path = trim($normalized, $separator);
 
-		return trim($normalized, $separator);
+		return preg_replace('/([A-Za-z]*?):\\/\\/(\\/*)(.*)/', '$1://$3', $path);
 	}
 
 	/**
