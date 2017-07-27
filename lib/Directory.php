@@ -2,6 +2,10 @@
 
 namespace common\io;
 
+use ArrayAccess;
+use Countable;
+use IteratorAggregate;
+use League\Flysystem\FileNotFoundException;
 use League\Flysystem\Filesystem;
 use League\Flysystem\MountManager;
 
@@ -10,11 +14,19 @@ use League\Flysystem\MountManager;
  *
  * @package common\io
  */
-class Directory {
+class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	/**
 	 * @var string
 	 */
 	protected $protocol = "file";
+	/**
+	 * @var FilterArray
+	 */
+	protected $filter;
+	/**
+	 * @var FilterArray
+	 */
+	protected $recursiveFilter;
 	/**
 	 * @var Filesystem
 	 */
@@ -41,18 +53,21 @@ class Directory {
 	 */
 	public function __construct($dir, $filesystem = NULL) {
 		if (is_array($dir) && isset($dir["object"]) && $dir["object"] instanceof Directory) {
-			$this->parent   = $dir["object"];
-			$this->dir      = $this->parent->getDir();
-			$this->dirPath  = $dir["path"];
-			$this->protocol = $this->parent->getProtocol();
+			$this->parent          = $dir["object"];
+			$this->dir             = $this->parent->getDir();
+			$this->dirPath         = $dir["path"];
+			$this->protocol        = $this->parent->getProtocol();
+			$this->recursiveFilter = $dir["filter"];
 		} else {
 			if (is_null($filesystem)) {
 				$filesystem = Manager::getManager();
 			}
-			$this->dir     = $filesystem;
-			$this->dirPath = Paths::normalize($dir);
-			$this->isRoot  = true;
+			$this->dir             = $filesystem;
+			$this->dirPath         = Paths::normalize($dir);
+			$this->isRoot          = true;
+			$this->recursiveFilter = new FilterArray();
 		}
+		$this->filter  = new FilterArray();
 		$this->dirPath = "/" . rtrim(ltrim($this->dirPath, '/'), '/') . '/';
 	}
 
@@ -128,40 +143,6 @@ class Directory {
 	}
 
 	/**
-	 * get current path with protocol
-	 *
-	 * @return string
-	 */
-	public function getFullPath(): string {
-		return Paths::normalize(Paths::makePath($this->getProtocol(), $this->getPath()));
-	}
-
-	/**
-	 * get all files and directory in current path
-	 *
-	 * @param bool $recursion recursion
-	 *
-	 * @return array(@var int => @var File|Directory)
-	 */
-	public function listContents(bool $recursion = true): array {
-		$a        = [];
-		$contents = $this->dir->listContents(
-			Paths::makePath($this->getProtocol(), $this->dirPath . "."),
-			$recursion
-		);
-		foreach ($contents as $file) {
-			$file["path"] = "/" . ltrim($file["path"], '/');
-			if ($file["type"] == "file") {
-				$a[] = new File($file["path"], $this);
-			} else {
-				$a[] = new Directory(["object" => $this, "path" => $file["path"]]);
-			}
-		}
-
-		return $a;
-	}
-
-	/**
 	 * Rename current directory
 	 *
 	 * @param string $newName new Name
@@ -181,7 +162,7 @@ class Directory {
 	 */
 	public function mkdir(string $path = ""): Directory {
 		if (!empty($path)) {
-			$dir = new Directory(["object" => $this, "path" => $this->dirPath . "/" . $path]);
+			$dir = new Directory(["object" => $this, "path" => $this->dirPath . "/" . $path, "filter" => $this->recursiveFilter]);
 			if (!$dir->isDirectory()) {
 				$dir->mkdir();
 			}
@@ -214,32 +195,6 @@ class Directory {
 	}
 
 	/**
-	 * get name of current directory
-	 *
-	 * @return string
-	 */
-	public function getName(): string {
-		$e = explode("/", Paths::normalize($this->dirPath));
-
-		return $e[count($e) - 1];
-	}
-
-
-	/**
-	 * creates a file
-	 *
-	 * @param string $name    name of file
-	 * @param string $content content
-	 *
-	 * @return File
-	 */
-	public function createFile(string $name, string $content = ""): File {
-		$this->getDir()->put(Paths::makePath($this->getProtocol(), $name), $content);
-
-		return new File($name, $this);
-	}
-
-	/**
 	 * get a sub directory of current directory
 	 *
 	 * @param string $path name of directory
@@ -253,7 +208,7 @@ class Directory {
 		 */
 		$directory = $this->dir->get(Paths::makePath($this->getProtocol(), $path));
 
-		return new Directory(["object" => $this, "path" => $directory->getPath()]);
+		return new Directory(["object" => $this, "path" => $directory->getPath(), "filter" => $this->recursiveFilter]);
 	}
 
 	/**
@@ -278,7 +233,7 @@ class Directory {
 		$path = Paths::normalize($this->dirPath . $path);
 
 		/**
-		 * @var \League\Flysystem\Directory
+		 * @var \League\Flysystem\Directory $file
 		 */
 		$file = $this->dir->get(Paths::makePath($this->getProtocol(), $path));
 
@@ -297,5 +252,249 @@ class Directory {
 		} else {
 			return $this->getParent();
 		}
+	}
+
+	/**
+	 * How many files and dirs do we have
+	 */
+	public function count(): int {
+		return count($this->listContents(false));
+	}
+
+	/**
+	 * get all files and directory in current path
+	 *
+	 * @param bool $recursion recursion
+	 *
+	 * @return array(@var int => @var File|Directory)
+	 */
+	public function listContents(bool $recursion = true): array {
+		$a        = [];
+		$contents = $this->dir->listContents(
+			Paths::makePath($this->getProtocol(), $this->dirPath . "."),
+			$recursion
+		);
+
+		foreach ($contents as $file) {
+			$file["path"] = "/" . ltrim($file["path"], '/');
+			if ($file["type"] == "file") {
+				$dirOrFile = new File($file["path"], $this);
+			} else {
+				$dirOrFile = new Directory(["object" => $this, "path" => $file["path"], "filter" => $this->recursiveFilter]);
+			}
+			$add = true;
+			foreach ($this->filter as $i => $filter) {
+				/**
+				 * @var \common\io\Filter $filter
+				 */
+				$add = $add && $filter->filter($dirOrFile);
+			}
+			if ($add) {
+				$a[$dirOrFile->getName()] = $dirOrFile;
+			}
+		}
+
+		return $a;
+	}
+
+	public function getIterator() {
+		return new \ArrayIterator($this->listContents(false));
+	}
+
+	public function offsetExists($offset) {
+		return isset($this->listContents(false)[$offset]);
+	}
+
+	public function offsetGet($offset) {
+		if ($offset == "..") {
+			return $this->parent();
+		}
+		$c = $this->listContents(false);
+		if (!isset($c[$offset])) {
+			throw new FileNotFoundException($this->dirPath . "/" . $offset);
+		}
+
+		return $c[$offset];
+	}
+
+	public function offsetSet($offset, $value) {
+		if ($offset == "..") {
+			return $this->parent();
+		}
+		$c = $this->listContents(false);
+		if (!isset($c[$offset])) {
+			throw new FileNotFoundException($this->dirPath . "/" . $offset);
+		}
+
+		/**
+		 * @var \common\io\Directory|\common\io\File $thing
+		 */
+		$thing = $c[$offset];
+
+		if ($thing->isFile()) {
+			$thing->write($value);
+		} else {
+			$thing->createFile($value);
+		}
+	}
+
+	/**
+	 * creates a file
+	 *
+	 * @param string $name    name of file
+	 * @param string $content content
+	 *
+	 * @return File
+	 */
+	public function createFile(string $name, string $content = ""): File {
+		$this->getDir()->put($this->getFullPath() . "/" . $name, $content);
+
+		return new File($name, $this);
+	}
+
+	/**
+	 * get current path with protocol
+	 *
+	 * @return string
+	 */
+	public function getFullPath(): string {
+		return Paths::normalize(Paths::makePath($this->getProtocol(), $this->getPath()));
+	}
+
+	public function offsetUnset($offset) {
+		$c = $this->listContents(false);
+		if (!isset($c[$offset])) {
+			throw new FileNotFoundException($this->dirPath . "/" . $offset);
+		}
+
+		/**
+		 * @var \common\io\Directory|\common\io\File $thing
+		 */
+		$thing = $c[$offset];
+		$thing->delete();
+	}
+
+	public function searchFile(string $word) {
+		$content = $this->listFiles(true);
+
+		return $this->fullSearch($word, $content);
+	}
+
+	/**
+	 * get all files and directory in current path
+	 *
+	 * @param bool $recursion recursion
+	 *
+	 * @return array(@var int => @var File|Directory)
+	 */
+	public function listFiles(bool $recursion = true): array {
+		$filter = new class extends Filter {
+			public function filter($dirOrPath): bool {
+				/**
+				 * @var \common\io\Directory|\common\io\File $dirOrPath
+				 */
+				return $dirOrPath->isFile();
+			}
+		};
+		$index  = $this->addFilter($filter);
+		$result = $this->listContents($recursion);
+		$this->removeFilter($index);
+
+		return $result;
+	}
+
+	public function addFilter($filter, bool $recursive = false) {
+		if (!is_object($filter)) {
+			$filter = new $filter;
+		}
+
+		$this->filter[] = $filter;
+
+		if ($recursive) {
+			$this->recursiveFilter[$this->filter->getCounter()] = $filter;
+		}
+
+		return $this->filter->getCounter();
+	}
+
+	public function removeFilter($index) {
+		$this->filter[$index] = NULL;
+		if (isset($this->recursiveFilter[$index])) {
+			unset($this->recursiveFilter[$index]);
+		}
+	}
+
+	public function fullSearch(string $word, $content) {
+		$word = strtolower($word);
+
+		$content = array_change_key_case($content, CASE_LOWER);
+		$matches = preg_grep('/(.*)' . $word . '(.*)/m', $content);
+
+		return $matches;
+	}
+
+	public function searchDirectory(string $word) {
+		$content = $this->listDirectories(true);
+
+		return $this->fullSearch($word, $content);
+	}
+
+	/**
+	 * get all files and directory in current path
+	 *
+	 * @param bool $recursion recursion
+	 *
+	 * @return array(@var int => @var File|Directory)
+	 */
+	public function listDirectories(bool $recursion = true): array {
+		$filter = new class extends Filter {
+			public function filter($dirOrPath): bool {
+				/**
+				 * @var \common\io\Directory|\common\io\File $dirOrPath
+				 */
+				return $dirOrPath->isDirectory();
+			}
+		};
+		$index  = $this->addFilter($filter);
+		$result = $this->listContents($recursion);
+		$this->removeFilter($index);
+
+		return $result;
+	}
+
+	public function searchContent($word) {
+		$matches = $this->listFiles(true);
+	}
+
+	public function search(string $word) {
+		$content = $this->listContents(true);
+
+		return $this->fullSearch($word, $content);
+	}
+
+	public function printTree($int = 0) {
+		$signs = "";
+		for ($i = 0; $i <= $int; $i++) {
+			$signs .= "   ";
+		}
+		$signs .= "---";
+		echo $this->getName() . PHP_EOL;
+		foreach ($this->listContents(false) as $value) {
+			echo $signs . $value->getName() . PHP_EOL;
+			if ($value->isDirectory()) {
+				$value->printTree($int++);
+			}
+		}
+	}
+
+	/**
+	 * get name of current directory
+	 *
+	 * @return string
+	 */
+	public function getName(): string {
+		$e = explode("/", Paths::normalize($this->dirPath));
+
+		return $e[count($e) - 1];
 	}
 }

@@ -53,7 +53,7 @@ class File {
 	 * @return bool
 	 */
 	public function isFile(): bool {
-		return $this->file->has(Paths::makePath($this->directory->getProtocol(), $this->filePath));
+		return $this->file->has($this->getFullPath());
 	}
 
 	/**
@@ -62,7 +62,7 @@ class File {
 	 * @return bool
 	 */
 	public function isReadable(): bool {
-		return is_string($this->file->read(Paths::makePath($this->directory->getProtocol(), $this->filePath)));
+		return is_string($this->file->read($this->getFullPath()));
 	}
 
 	/**
@@ -72,7 +72,7 @@ class File {
 	 */
 	public function isWritable(): bool {
 		return $this->file->getVisibility(
-				Paths::makePath($this->directory->getProtocol(), $this->filePath)
+				$this->getFullPath()
 			) == "public";
 	}
 
@@ -95,21 +95,12 @@ class File {
 	}
 
 	/**
-	 * get current path with protocol
-	 *
-	 * @return string
-	 */
-	public function getFullPath(): string {
-		return Paths::normalize(Paths::makePath($this->directory->getProtocol(), $this->getPath()));
-	}
-
-	/**
 	 * get file size
 	 *
 	 * @return int
 	 */
 	public function getSize(): int {
-		return $this->file->getSize(Paths::makePath($this->directory->getProtocol(), $this->filePath));
+		return $this->file->getSize($this->getFullPath());
 	}
 
 	/**
@@ -118,7 +109,7 @@ class File {
 	 * @return string
 	 */
 	public function getMimeType(): string {
-		return $this->file->getMimetype(Paths::makePath($this->directory->getProtocol(), $this->filePath));
+		return $this->file->getMimetype($this->getFullPath());
 	}
 
 	/**
@@ -127,7 +118,7 @@ class File {
 	 * @return int
 	 */
 	public function getModifiedTime(): int {
-		return $this->file->getTimestamp(Paths::makePath($this->directory->getProtocol(), $this->filePath));
+		return $this->file->getTimestamp($this->getFullPath());
 	}
 
 	/**
@@ -167,7 +158,7 @@ class File {
 	 * @return string
 	 */
 	public function getContent(): string {
-		return $this->file->read(Paths::makePath($this->directory->getProtocol(), $this->filePath));
+		return $this->file->read($this->getFullPath());
 	}
 
 	/**
@@ -190,7 +181,7 @@ class File {
 	 */
 	public function move(Directory $to): File {
 		$this->file->move(
-			Paths::makePath($this->directory->getProtocol(), $this->filePath),
+			$this->getFullPath(),
 			Paths::makePath($to->getProtocol(), $to->getPath() . "/" . $this->getName())
 		);
 
@@ -203,7 +194,7 @@ class File {
 	 * @return Directory
 	 */
 	public function delete(): Directory {
-		$this->file->delete(Paths::makePath($this->directory->getProtocol(), $this->filePath));
+		$this->file->delete($this->getFullPath());
 
 		return $this->getDirectory();
 	}
@@ -242,7 +233,7 @@ class File {
 	 */
 	public function copy(Directory $to): File {
 		$this->file->copy(
-			Paths::makePath($this->directory->getProtocol(), $this->filePath),
+			$this->getFullPath(),
 			Paths::makePath($to->getProtocol(), $to->getPath() . "/" . $this->getName())
 		);
 
@@ -274,5 +265,18 @@ class File {
 	 */
 	public function isDirectory(): bool {
 		return false;
+	}
+
+	public function write(string $content) {
+		$this->file->put($this->getFullPath(), $content);
+	}
+
+	/**
+	 * get current path with protocol
+	 *
+	 * @return string
+	 */
+	public function getFullPath(): string {
+		return Paths::normalize(Paths::makePath($this->directory->getProtocol(), $this->getPath()));
 	}
 }
