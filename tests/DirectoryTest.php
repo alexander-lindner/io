@@ -13,7 +13,7 @@ class DirectoryTest extends TestCase {
 
 	public function __construct($name = NULL, array $data = [], $dataName = '') {
 		parent::__construct($name, $data, $dataName);
-		$this->dir = new Directory(".");
+		$this->dir = (new Directory("."))->get("test")->mkdir();
 	}
 
 	public function testMkdir() {
@@ -55,6 +55,6 @@ class DirectoryTest extends TestCase {
 	}
 
 	public function __destruct() {
-
+		$this->dir->delete();
 	}
 }
