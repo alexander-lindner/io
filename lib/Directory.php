@@ -313,7 +313,7 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 *
 	 * @return Directory
 	 */
-	public function delete(): Directory {
+	public function delete() {
 		$this->loadDir();
 		$this->dir->deleteDir($this->getFullPath());
 		if ($this->isIsRoot()) {

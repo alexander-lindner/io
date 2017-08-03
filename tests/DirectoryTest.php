@@ -13,7 +13,8 @@ class DirectoryTest extends TestCase {
 
 	public function __construct($name = NULL, array $data = [], $dataName = '') {
 		parent::__construct($name, $data, $dataName);
-		$this->dir = (new Directory("."))->get("test")->mkdir();
+		(new Directory("."))->get("test")->mkdir();
+		$this->dir = new Directory("./test/");
 	}
 
 	public function testMkdir() {
