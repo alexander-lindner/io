@@ -30,7 +30,7 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	/**
 	 * @var Filesystem
 	 */
-	private $dir;
+	private $dir = NULL;
 	/**
 	 * @var string
 	 */
@@ -54,10 +54,8 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	public function __construct($dir, $filesystem = NULL) {
 		if (is_array($dir) && isset($dir["object"]) && $dir["object"] instanceof Directory) {
 			$this->parent          = $dir["object"];
-			$this->dir             = $this->parent->getDir();
 			$this->dirPath         = $dir["path"];
-			$this->protocol        = $this->parent->getProtocol();
-			$this->recursiveFilter = $dir["filter"];
+			$this->recursiveFilter = $this->getParent()->getRecursiveFilter();
 		} else {
 			if (is_null($filesystem)) {
 				$filesystem = Manager::getManager();
@@ -68,36 +66,14 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 			$this->recursiveFilter = new FilterArray();
 		}
 		$this->filter  = new FilterArray();
-		$this->dirPath = "/" . rtrim(ltrim($this->dirPath, '/'), '/') . '/';
+		$this->dirPath = Paths::trim($this->dirPath);
 	}
 
 	/**
-	 * get Flysystems Filesystem
-	 *
-	 * @return MountManager
+	 * @return FilterArray
 	 */
-	public function getDir(): MountManager {
-		return $this->dir;
-	}
-
-	/**
-	 * @return string
-	 */
-	public function getProtocol(): string {
-		if ($this->isIsRoot()) {
-			return $this->protocol;
-		} else {
-			return $this->getParent()->getProtocol();
-		}
-	}
-
-	/**
-	 * check if it is root directory
-	 *
-	 * @return bool
-	 */
-	public function isIsRoot(): bool {
-		return $this->isRoot;
+	public function getRecursiveFilter(): FilterArray {
+		return $this->recursiveFilter;
 	}
 
 	/**
@@ -125,7 +101,16 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	}
 
 	/**
-	 * to string
+	 * check if it is root directory
+	 *
+	 * @return bool
+	 */
+	public function isIsRoot(): bool {
+		return $this->isRoot;
+	}
+
+	/**
+	 * to string, Echos path
 	 *
 	 * @return string
 	 */
@@ -139,18 +124,58 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 * @return string
 	 */
 	public function getPath(): string {
-		return Paths::normalize($this->dirPath);
+		return Paths::trim(Paths::normalize($this->dirPath));
 	}
 
 	/**
 	 * Rename current directory
 	 *
-	 * @param string $newName new Name
+	 * @param string $newName new name
 	 *
 	 * @return bool
 	 */
 	public function rename(string $newName): bool {
-		return $this->dir->rename(Paths::makePath($this->getProtocol(), $this->dirPath), $newName);
+		$this->loadDir();
+
+		return $this->dir->rename($this->getFullPath(), $newName);
+	}
+
+	private function loadDir() {
+		if (is_null($this->dir)) {
+			$this->dir = $this->getDir();
+			$this->dir->get($this->getFullPath());
+		}
+	}
+
+	/**
+	 * get Flysystems Filesystem
+	 *
+	 * @return \League\Flysystem\MountManager
+	 */
+	public function getDir(): MountManager {
+		return $this->isIsRoot() ? $this->dir : $this->getParent()->getDir();
+	}
+
+	/**
+	 * get current path with protocol
+	 *
+	 * @return string
+	 */
+	public function getFullPath(): string {
+		return Paths::makePath($this->getProtocol(), Paths::normalize($this->getPath()));
+	}
+
+	/**
+	 * get used internal protocol
+	 *
+	 * @return string
+	 */
+	public function getProtocol(): string {
+		if ($this->isIsRoot()) {
+			return $this->protocol;
+		} else {
+			return $this->getParent()->getProtocol();
+		}
 	}
 
 	/**
@@ -162,14 +187,14 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 */
 	public function mkdir(string $path = ""): Directory {
 		if (!empty($path)) {
-			$dir = new Directory(["object" => $this, "path" => $this->dirPath . "/" . $path, "filter" => $this->recursiveFilter]);
+			$dir = new Directory(["object" => $this, "path" => $this->dirPath . "/" . $path]);
 			if (!$dir->isDirectory()) {
 				$dir->mkdir();
 			}
 
 			return $dir;
 		} else {
-			$this->dir->createDir(Paths::makePath($this->getProtocol(), $this->dirPath));
+			$this->getDir()->createDir($this->getFullPath());
 
 			return $this;
 		}
@@ -181,7 +206,34 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 * @return bool
 	 */
 	public function isDirectory(): bool {
-		return $this->dir->has(Paths::makePath($this->getProtocol(), $this->dirPath));
+		if ($this->isIsRoot()) {
+			return true;
+		}
+		try {
+			$this->getDir()->get($this->getFullPath());
+			$content = $this->getDir()->listContents($this->getParent()->getFullPath());
+			foreach ($content as $item) {
+				if ($item["basename"] == $this->getName()) {
+					return $item["type"] == "dir";
+				}
+			}
+
+			return false;
+
+		} catch (FileNotFoundException $e) {
+			return false;
+		}
+	}
+
+	/**
+	 * get name of current directory
+	 *
+	 * @return string
+	 */
+	public function getName(): string {
+		$e = explode("/", Paths::normalize($this->dirPath));
+
+		return $e[count($e) - 1];
 	}
 
 	/**
@@ -199,16 +251,31 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 *
 	 * @param string $path name of directory
 	 *
-	 * @return Directory
+	 * @return Directory|\common\io\File
 	 */
-	public function get(string $path): Directory {
-		$path = $this->dirPath . $path;
-		/**
-		 * @var \League\Flysystem\Directory
-		 */
-		$directory = $this->dir->get(Paths::makePath($this->getProtocol(), $path));
+	public function get(string $path) {
+		$ex  = explode("/", $path);
+		$dir = $this;
+		$n   = 1;
+		foreach ($ex as $item) {
+			$isDir = true;
+			if (!$dir->isIsRoot() && $n == count($ex)) {
+				$content = $dir->getDir()->listContents($dir->getFullPath());
+				foreach ($content as $i) {
+					if ($i["basename"] == $item) {
+						$isDir = !($i["type"] == "file");
+					}
+				}
+			}
+			if ($isDir) {
+				$dir = new Directory(["object" => $dir, "path" => $dir->getPath() . "/" . $item]);
+			} else {
+				$dir = $dir->file($item);
+			}
+			$n++;
+		}
 
-		return new Directory(["object" => $this, "path" => $directory->getPath(), "filter" => $this->recursiveFilter]);
+		return $dir;
 	}
 
 	/**
@@ -227,15 +294,16 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 *
 	 * @param string $path file name
 	 *
+	 * @todo
+	 *
 	 * @return File
 	 */
 	public function getFile(string $path): File {
-		$path = Paths::normalize($this->dirPath . $path);
-
+		$this->loadDir();
 		/**
 		 * @var \League\Flysystem\Directory $file
 		 */
-		$file = $this->dir->get(Paths::makePath($this->getProtocol(), $path));
+		$file = $this->dir->get($this->getFullPath() . "/" . $path);
 
 		return new File($file->getPath(), $this);
 	}
@@ -246,7 +314,8 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 * @return Directory
 	 */
 	public function delete(): Directory {
-		$this->dir->deleteDir(Paths::makePath($this->getProtocol(), $this->dirPath));
+		$this->loadDir();
+		$this->dir->deleteDir($this->getFullPath());
 		if ($this->isIsRoot()) {
 			return NULL;
 		} else {
@@ -266,10 +335,11 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 *
 	 * @param bool $recursion recursion
 	 *
-	 * @return array(@var int => @var File|Directory)
+	 * @return Directory[]|File[]
 	 */
 	public function listContents(bool $recursion = true): array {
-		$a        = [];
+		$a = [];
+		$this->loadDir();
 		$contents = $this->dir->listContents(
 			Paths::makePath($this->getProtocol(), $this->dirPath . "."),
 			$recursion
@@ -280,12 +350,12 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 			if ($file["type"] == "file") {
 				$dirOrFile = new File($file["path"], $this);
 			} else {
-				$dirOrFile = new Directory(["object" => $this, "path" => $file["path"], "filter" => $this->recursiveFilter]);
+				$dirOrFile = new Directory(["object" => $this, "path" => $file["path"]]);
 			}
 			$add = true;
 			foreach ($this->filter as $i => $filter) {
 				/**
-				 * @var \common\io\Filter $filter
+				 * @var Filter $filter
 				 */
 				$add = $add && $filter->filter($dirOrFile);
 			}
@@ -297,14 +367,32 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 		return $a;
 	}
 
+	/**
+	 * @return \ArrayIterator
+	 */
 	public function getIterator() {
 		return new \ArrayIterator($this->listContents(false));
 	}
 
+	/**
+	 * Array access
+	 *
+	 * @param string $offset
+	 *
+	 * @return bool
+	 */
 	public function offsetExists($offset) {
 		return isset($this->listContents(false)[$offset]);
 	}
 
+	/**
+	 * Array access
+	 *
+	 * @param string $offset
+	 *
+	 * @return Directory|File
+	 * @throws \League\Flysystem\FileNotFoundException
+	 */
 	public function offsetGet($offset) {
 		if ($offset == "..") {
 			return $this->parent();
@@ -317,6 +405,15 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 		return $c[$offset];
 	}
 
+	/**
+	 * Array access
+	 *
+	 * @param string $offset
+	 * @param string $value
+	 *
+	 * @return Directory
+	 * @throws \League\Flysystem\FileNotFoundException
+	 */
 	public function offsetSet($offset, $value) {
 		if ($offset == "..") {
 			return $this->parent();
@@ -327,7 +424,7 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 		}
 
 		/**
-		 * @var \common\io\Directory|\common\io\File $thing
+		 * @var Directory|File $thing
 		 */
 		$thing = $c[$offset];
 
@@ -347,20 +444,19 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 * @return File
 	 */
 	public function createFile(string $name, string $content = ""): File {
+		$this->loadDir();
 		$this->getDir()->put($this->getFullPath() . "/" . $name, $content);
 
 		return new File($name, $this);
 	}
 
 	/**
-	 * get current path with protocol
+	 * Array access
 	 *
-	 * @return string
+	 * @param string $offset
+	 *
+	 * @throws \League\Flysystem\FileNotFoundException
 	 */
-	public function getFullPath(): string {
-		return Paths::normalize(Paths::makePath($this->getProtocol(), $this->getPath()));
-	}
-
 	public function offsetUnset($offset) {
 		$c = $this->listContents(false);
 		if (!isset($c[$offset])) {
@@ -368,7 +464,7 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 		}
 
 		/**
-		 * @var \common\io\Directory|\common\io\File $thing
+		 * @var Directory|File $thing
 		 */
 		$thing = $c[$offset];
 		$thing->delete();
@@ -391,7 +487,7 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 		$filter = new class extends Filter {
 			public function filter($dirOrPath): bool {
 				/**
-				 * @var \common\io\Directory|\common\io\File $dirOrPath
+				 * @var Directory|File $dirOrPath
 				 */
 				return $dirOrPath->isFile();
 			}
@@ -403,6 +499,14 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 		return $result;
 	}
 
+	/**
+	 * add an (file) filter
+	 *
+	 * @param Filter $filter
+	 * @param bool   $recursive
+	 *
+	 * @return int filter index
+	 */
 	public function addFilter($filter, bool $recursive = false) {
 		if (!is_object($filter)) {
 			$filter = new $filter;
@@ -450,7 +554,7 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 		$filter = new class extends Filter {
 			public function filter($dirOrPath): bool {
 				/**
-				 * @var \common\io\Directory|\common\io\File $dirOrPath
+				 * @var Directory|File $dirOrPath
 				 */
 				return $dirOrPath->isDirectory();
 			}
@@ -462,16 +566,33 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 		return $result;
 	}
 
+	/**
+	 * @todo
+	 *
+	 * @param $word
+	 */
 	public function searchContent($word) {
 		$matches = $this->listFiles(true);
 	}
 
+	/**
+	 * search for files which contains given string in their name
+	 *
+	 * @param string $word
+	 *
+	 * @return array
+	 */
 	public function search(string $word) {
 		$content = $this->listContents(true);
 
 		return $this->fullSearch($word, $content);
 	}
 
+	/**
+	 * print a file tree
+	 *
+	 * @param int $int recursions number
+	 */
 	public function printTree($int = 0) {
 		$signs = "";
 		for ($i = 0; $i <= $int; $i++) {
@@ -485,16 +606,5 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 				$value->printTree($int++);
 			}
 		}
-	}
-
-	/**
-	 * get name of current directory
-	 *
-	 * @return string
-	 */
-	public function getName(): string {
-		$e = explode("/", Paths::normalize($this->dirPath));
-
-		return $e[count($e) - 1];
 	}
 }

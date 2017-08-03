@@ -27,13 +27,12 @@ class File {
 	 * file constructor.
 	 *
 	 * @param string    $file
-	 * @param Directory $parent
+	 * @param Directory $directory
 	 */
-	public function __construct(string $file, Directory $parent) {
-		$this->directory = $parent;
+	public function __construct(string $file, Directory $directory) {
+		$this->directory = $directory;
 		$this->filePath  = $file;
-
-		$this->file = $parent->getDir();
+		$this->file      = $this->directory->getDir();
 	}
 
 	/**
@@ -54,6 +53,24 @@ class File {
 	 */
 	public function isFile(): bool {
 		return $this->file->has($this->getFullPath());
+	}
+
+	/**
+	 * get current path with protocol
+	 *
+	 * @return string
+	 */
+	public function getFullPath(): string {
+		return Paths::normalize(Paths::makePath($this->directory->getProtocol(), $this->getPath()));
+	}
+
+	/**
+	 * get file path
+	 *
+	 * @return string
+	 */
+	public function getPath(): string {
+		return Paths::normalize($this->filePath);
 	}
 
 	/**
@@ -83,15 +100,6 @@ class File {
 	 */
 	public function __toString(): string {
 		return $this->getPath();
-	}
-
-	/**
-	 * get file path
-	 *
-	 * @return string
-	 */
-	public function getPath(): string {
-		return Paths::normalize($this->filePath);
 	}
 
 	/**
@@ -234,7 +242,7 @@ class File {
 	public function copy(Directory $to): File {
 		$this->file->copy(
 			$this->getFullPath(),
-			Paths::makePath($to->getProtocol(), $to->getPath() . "/" . $this->getName())
+			$to->getFullPath() . "/" . $this->getName()
 		);
 
 		return new File($to->getPath() . "/" . $this->getName(), $to);
@@ -269,14 +277,5 @@ class File {
 
 	public function write(string $content) {
 		$this->file->put($this->getFullPath(), $content);
-	}
-
-	/**
-	 * get current path with protocol
-	 *
-	 * @return string
-	 */
-	public function getFullPath(): string {
-		return Paths::normalize(Paths::makePath($this->directory->getProtocol(), $this->getPath()));
 	}
 }

@@ -20,6 +20,7 @@ class Paths {
 	 * @see http://stackoverflow.com/a/20545583
 	 */
 	public static function normalize(string $path, string $separator = '\\/'): string {
+		$a          = ($path);
 		$path       = str_replace("\\", "/", $path);
 		$normalized = preg_replace('#\p{C}+|^\./#u', '', $path);
 		$normalized = preg_replace('#/\.(?=/)|^\./|\./$#', '', $normalized);
@@ -32,9 +33,12 @@ class Paths {
 				'Path is outside of the defined root, path: [' . $path . '], resolved: [' . $normalized . ']'
 			);
 		}
-		$path = trim($normalized, $separator);
+		$path = preg_replace('/([A-Za-z]*?):\/\/(\/*)(.*)/', '$1://$3', trim($normalized, $separator));
+		if (strpos($path, "://") === false) {
+			$path = "/" . ltrim($path, "/");
+		}
 
-		return preg_replace('/([A-Za-z]*?):\/\/(\/*)(.*)/', '$1://$3', $path);
+		return $path;
 	}
 
 	/**
@@ -117,5 +121,9 @@ class Paths {
 	 */
 	public static function makePath(string $protocol, string $name): string {
 		return $protocol . "://" . $name;
+	}
+
+	public static function trim($dirPath) {
+		return "/" . rtrim(ltrim($dirPath, '/'), '/') . '/';
 	}
 }
