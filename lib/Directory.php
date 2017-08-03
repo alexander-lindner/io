@@ -481,7 +481,7 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 *
 	 * @param bool $recursion recursion
 	 *
-	 * @return array(@var int => @var File|Directory)
+	 * @return File[]
 	 */
 	public function listFiles(bool $recursion = true): array {
 		$filter = new class extends Filter {
@@ -548,7 +548,7 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 *
 	 * @param bool $recursion recursion
 	 *
-	 * @return array(@var int => @var File|Directory)
+	 * @return Directory[]
 	 */
 	public function listDirectories(bool $recursion = true): array {
 		$filter = new class extends Filter {
