@@ -138,13 +138,17 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 		if (!$this->isIsRoot()) {
 			$newName = $this->getParent()->getPath() . "/" . $newName;
 		}
-		echo "Oldname: " . $this->getFullPath() . ", $newName";
-		/**
-		 * @var \League\Flysystem\Filesystem $d
-		 */
-		$d = $this->getDir();
 
-		return $d->rename($this->getFullPath(), $newName);
+		return $this->getDir()->rename($this->getFullPath(), $newName);
+	}
+
+	/**
+	 * get Flysystems Filesystem
+	 *
+	 * @return \League\Flysystem\MountManager
+	 */
+	public function getDir(): MountManager {
+		return $this->isIsRoot() ? $this->dir : $this->getParent()->getDir();
 	}
 
 	/**
@@ -167,15 +171,6 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 		} else {
 			return $this->getParent()->getProtocol();
 		}
-	}
-
-	/**
-	 * get Flysystems Filesystem
-	 *
-	 * @return \League\Flysystem\MountManager
-	 */
-	public function getDir(): MountManager {
-		return $this->isIsRoot() ? $this->dir : $this->getParent()->getDir();
 	}
 
 	/**
@@ -402,7 +397,7 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 		}
 		$c = $this->listContents(false);
 		if (!isset($c[$offset])) {
-			throw new FileNotFoundException($this->dirPath . "/" . $offset);
+			throw new FileNotFoundException(Paths::normalize($this->dirPath . "/" . $offset));
 		}
 
 		return $c[$offset];
@@ -525,7 +520,7 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	}
 
 	public function removeFilter($index) {
-		$this->filter[$index] = NULL;
+		unset($this->filter[$index]);
 		if (isset($this->recursiveFilter[$index])) {
 			unset($this->recursiveFilter[$index]);
 		}

@@ -1,6 +1,7 @@
 <?php
 
 use common\io\Directory;
+use common\io\File;
 use common\io\NoParentAvailableException;
 use PHPUnit\Framework\TestCase;
 
@@ -20,6 +21,7 @@ class DirectoryTest extends TestCase {
 
 	public function testMkdir() {
 		self::assertDirectoryExists("." . $this->dir->get("testDirectory")->mkdir()->getPath());
+		self::assertDirectoryExists("." . $this->dir->get("testDirectory")->mkdir("testMkdir")->getPath());
 	}
 
 	public function testFileCreate() {
@@ -41,6 +43,14 @@ class DirectoryTest extends TestCase {
 		foreach ($this->dir->listDirectories() as $listFile) {
 			self::assertTrue($listFile->isDirectory());
 		}
+		foreach ($this->dir as $list) {
+			self::assertDirectoryExists("." . $list->getPath());
+		}
+		foreach ($this->dir["testDirectory"] as $list) {
+			if ($list->isDirectory()) {
+				self::assertDirectoryExists("." . $list->getPath());
+			}
+		}
 	}
 
 	public function testCopy() {
@@ -60,6 +70,15 @@ class DirectoryTest extends TestCase {
 			$this->dir->get("testDirectory")->getFile("testFileRenamed")->md5(),
 			md5_file("." . $this->dir->get("testDirectory")->getFile("testFileRenamed")->getPath())
 		);
+		self::assertEquals(
+			File::get("test/testDirectory/testFileRenamed")->md5(),
+			md5_file("." . $this->dir->get("testDirectory")->getFile("testFileRenamed")->getPath())
+		);
+	}
+
+	public function testVarious() {
+		self::assertEquals((string)$this->dir->get("lib"), $this->dir->get("lib")->getPath());
+		self::assertTrue($this->dir->get("testDirectory")->isDirectory());
 	}
 
 	public function testDeleteDirectory() {
@@ -69,10 +88,6 @@ class DirectoryTest extends TestCase {
 		self::assertDirectoryNotExists("." . $this->dir->get("testDirectoryForCopy")->getPath());
 	}
 
-	public function testVarious() {
-		self::assertEquals((string)$this->dir->get("lib"), $this->dir->get("lib")->getPath());
-
-	}
 
 	public function __destruct() {
 		$this->dir->delete();

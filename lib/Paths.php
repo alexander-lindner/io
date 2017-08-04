@@ -69,49 +69,6 @@ class Paths {
 	}
 
 	/**
-	 * @param $path
-	 *
-	 * @deprecated
-	 *
-	 * @return string
-	 */
-	public static function getProtocol($path): string {
-		$protocols = "";
-		foreach (Manager::getFilesystems() as $key => $filesystem) {
-			$protocols .= $key . ",";
-		}
-		$protocols = rtrim($protocols, ",");
-		$regex     = "/([$protocols]*)(:\\/\\/)/m";
-		if (!preg_match($regex, $path)) {
-			$path = "file://$path";
-		}
-
-		return explode("://", $path)[0] . "://";
-	}
-
-	/**
-	 * @param $path
-	 *
-	 * @deprecated
-	 *
-	 * @return mixed
-	 */
-	public static function getPathWithoutProtocol($path) {
-		$protocols = "";
-		foreach (Manager::getFilesystems() as $key => $filesystem) {
-			$protocols .= $key . ",";
-		}
-		$protocols = rtrim($protocols, ",");
-		$regex     = "/([$protocols]*)(:\\/)/m";
-		if (!preg_match($regex, $path)) {
-			$path = "file:/$path";
-		}
-
-		return preg_split("/([a-zA-Z]*)(:\\/)/m", $path)[1];
-	}
-
-
-	/**
 	 * make a full featured path
 	 *
 	 * @param string $protocol protocol
