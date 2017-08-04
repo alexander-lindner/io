@@ -70,7 +70,7 @@ class File {
 	 * @return string
 	 */
 	public function getPath(): string {
-		return Paths::normalize($this->filePath);
+		return Paths::normalize($this->directory->getPath() . "/" . $this->filePath);
 	}
 
 	/**
@@ -177,7 +177,7 @@ class File {
 	 * @return bool
 	 */
 	public function rename(string $newName): bool {
-		return $this->file->rename($this->filePath, $newName);
+		return $this->file->rename($this->getFullPath(), $this->directory->getPath() . "/" . $newName);
 	}
 
 	/**
@@ -245,7 +245,7 @@ class File {
 			$to->getFullPath() . "/" . $this->getName()
 		);
 
-		return new File($to->getPath() . "/" . $this->getName(), $to);
+		return new File($this->getName(), $to);
 	}
 
 	/**

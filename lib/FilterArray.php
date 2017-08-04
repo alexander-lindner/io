@@ -12,7 +12,7 @@ class FilterArray implements ArrayAccess, Countable, IteratorAggregate {
 	private $counter;
 
 	public function __construct() {
-		$this->counter = (int)-1;
+		$this->counter = -1;
 	}
 
 	public function offsetExists($offset) {
@@ -24,10 +24,8 @@ class FilterArray implements ArrayAccess, Countable, IteratorAggregate {
 	}
 
 	public function offsetSet($offset, $value) {
-		if (is_null($offset)) {
-			$offset = $this->counter++;
-		}
-		$this->filter[$offset] = $value;
+		$this->counter++;
+		$this->filter[$this->counter] = $value;
 	}
 
 	public function offsetUnset($offset) {

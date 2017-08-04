@@ -135,25 +135,16 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 * @return bool
 	 */
 	public function rename(string $newName): bool {
-		$this->loadDir();
-
-		return $this->dir->rename($this->getFullPath(), $newName);
-	}
-
-	private function loadDir() {
-		if (is_null($this->dir)) {
-			$this->dir = $this->getDir();
-			$this->dir->get($this->getFullPath());
+		if (!$this->isIsRoot()) {
+			$newName = $this->getParent()->getPath() . "/" . $newName;
 		}
-	}
+		echo "Oldname: " . $this->getFullPath() . ", $newName";
+		/**
+		 * @var \League\Flysystem\Filesystem $d
+		 */
+		$d = $this->getDir();
 
-	/**
-	 * get Flysystems Filesystem
-	 *
-	 * @return \League\Flysystem\MountManager
-	 */
-	public function getDir(): MountManager {
-		return $this->isIsRoot() ? $this->dir : $this->getParent()->getDir();
+		return $d->rename($this->getFullPath(), $newName);
 	}
 
 	/**
@@ -176,6 +167,15 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 		} else {
 			return $this->getParent()->getProtocol();
 		}
+	}
+
+	/**
+	 * get Flysystems Filesystem
+	 *
+	 * @return \League\Flysystem\MountManager
+	 */
+	public function getDir(): MountManager {
+		return $this->isIsRoot() ? $this->dir : $this->getParent()->getDir();
 	}
 
 	/**
@@ -300,12 +300,15 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 */
 	public function getFile(string $path): File {
 		$this->loadDir();
-		/**
-		 * @var \League\Flysystem\Directory $file
-		 */
-		$file = $this->dir->get($this->getFullPath() . "/" . $path);
 
-		return new File($file->getPath(), $this);
+		return new File($path, $this);
+	}
+
+	private function loadDir() {
+		if (is_null($this->dir)) {
+			$this->dir = $this->getDir();
+			$this->dir->get($this->getFullPath());
+		}
 	}
 
 	/**

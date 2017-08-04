@@ -1,6 +1,7 @@
 <?php
 
 use common\io\Directory;
+use common\io\NoParentAvailableException;
 use PHPUnit\Framework\TestCase;
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -18,15 +19,17 @@ class DirectoryTest extends TestCase {
 	}
 
 	public function testMkdir() {
-		self::assertDirectoryExists("." . $this->dir->get("test")->mkdir()->getPath());
+		self::assertDirectoryExists("." . $this->dir->get("testDirectory")->mkdir()->getPath());
 	}
 
 	public function testFileCreate() {
-		self::assertFileExists("." . $this->dir->get("test")->createFile("test", "test"));
+		self::assertFileExists("." . $this->dir->get("testDirectory")->createFile("testFile", "test")->getPath());
 	}
 
 	public function testParent() {
-		self::assertEquals($this->dir, $this->dir->get("lib")->parent());
+		self::assertEquals($this->dir, $this->dir->get("testDirectory")->parent());
+		self::expectException(NoParentAvailableException::class);
+		$this->dir->parent();
 	}
 
 	public function testListContents() {
@@ -41,21 +44,38 @@ class DirectoryTest extends TestCase {
 	}
 
 	public function testCopy() {
-		self::assertFileExists("." . $this->dir->get("test")->getFile("test")->copy($this->dir->get("test2"))->getPath());
+		self::assertFileExists("." . $this->dir->get("testDirectory")->getFile("testFile")->copy($this->dir->get("testDirectoryForCopy"))->getPath());
+	}
+
+	public function testRename() {
+		self::assertTrue($this->dir->get("testDirectory/subTestDirectory")->mkdir()->rename("subTestDirectoryRenamed"));
+		self::assertDirectoryExists("." . $this->dir->get("testDirectory/subTestDirectoryRenamed")->getPath());
+
+		self::assertTrue($this->dir->get("testDirectory/testFile")->rename("testFileRenamed"));
+		self::assertFileExists("." . $this->dir->get("testDirectory/testFileRenamed")->getPath());
 	}
 
 	public function testFile() {
-		self::assertEquals($this->dir->get("test")->getFile("test")->md5(), md5_file("." . $this->dir->get("test")->getFile("test")->getPath()));
+		self::assertEquals(
+			$this->dir->get("testDirectory")->getFile("testFileRenamed")->md5(),
+			md5_file("." . $this->dir->get("testDirectory")->getFile("testFileRenamed")->getPath())
+		);
 	}
 
 	public function testDeleteDirectory() {
-		$this->dir->get("test")->delete();
-		$this->dir->get("test2")->delete();
-		self::assertDirectoryNotExists("." . $this->dir->get("test")->getPath());
-		self::assertDirectoryNotExists("." . $this->dir->get("test2")->getPath());
+		$this->dir->get("testDirectory")->delete();
+		$this->dir->get("testDirectoryForCopy")->delete();
+		self::assertDirectoryNotExists("." . $this->dir->get("testDirectory")->getPath());
+		self::assertDirectoryNotExists("." . $this->dir->get("testDirectoryForCopy")->getPath());
+	}
+
+	public function testVarious() {
+		self::assertEquals((string)$this->dir->get("lib"), $this->dir->get("lib")->getPath());
+
 	}
 
 	public function __destruct() {
 		$this->dir->delete();
+
 	}
 }
