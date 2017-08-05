@@ -242,7 +242,7 @@ class File {
 	public function copy(Directory $to): File {
 		$this->file->copy(
 			$this->getFullPath(),
-			$to->getFullPath() . "/" . $this->getName()
+			Paths::normalize($to->getFullPath() . "/" . $this->getName())
 		);
 
 		return new File($this->getName(), $to);

@@ -1,4 +1,4 @@
-# common/io [![Packagist](https://img.shields.io/packagist/v/common-libs/io.svg?style=flat-square)](https://packagist.org/packages/common-libs/io)  [![license](https://img.shields.io/github/license/common-libs/io.svg?style=flat-square)](https://github.com/common-libs/io)  [![codecov](https://codecov.io/gh/common-libs/io/branch/master/graph/badge.svg?style=flat-square)](https://codecov.io/gh/common-libs/io) [![Travis](https://img.shields.io/travis/common-libs/io.svg?style=flat-square)](https://travis-ci.org/common-libs/io)
+# common/io [![Packagist](https://img.shields.io/packagist/v/common-libs/io.svg?style=flat-square)](https://packagist.org/packages/common-libs/io)  [![license](https://img.shields.io/github/license/common-libs/io.svg?style=flat-square)](https://github.com/common-libs/io)  [![codecov](https://codecov.io/gh/common-libs/io/branch/master/graph/badge.svg)](https://codecov.io/gh/common-libs/io) [![Travis](https://img.shields.io/travis/common-libs/io.svg?style=flat-square)](https://travis-ci.org/common-libs/io)
 
 ***common/io*** is a simple and powerful I/O library. It wraps the popular [Flysystem](https://flysystem.thephpleague.com/) 
 to a oop structure and adds helpful utils.
@@ -18,7 +18,7 @@ $webdav = new class(".") extends Directory {
 
         Manager::addAdapter(
             $this->getProtocol(),
-			new WebDAVAdapter(
+			    new WebDAVAdapter(
 				new Client(
 					 [
 						'baseUri'  => 'https://owncloud.domain.tld/',
@@ -116,8 +116,6 @@ class Ftp extends Directory {
 ```
 The protocol is used as a class internal virtual mapping and identifier.
 
-If you are working in your project dir you can use  ***common\io\Local***.
-
 See [![Documentation](https://img.shields.io/badge/Documentation-api-orange.svg?style=flat-square)](https://common-libs.github.io/io/) for a full list of available methods.
 
 When getting a file (e.g. using `Directory->getFile()` or `Directory->listFiles()`) you get a new ***common\io\File*** object.
@@ -127,10 +125,9 @@ When getting a file (e.g. using `Directory->getFile()` or `Directory->listFiles(
 <?php
 
 use common\io\Directory;
-use common\io\Local;
 use common\io\Manager;
 
-$local = new Local("."); //current dir in vendor/common-libs/io/
+$local = new Directory("."); //current dir in vendor/common-libs/io/
 
 $file = $local->createFile("test", "hi"); // create file "test" with content hi
 echo $file->getContent() . PHP_EOL; // hi

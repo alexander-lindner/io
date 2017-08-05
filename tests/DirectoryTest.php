@@ -2,7 +2,9 @@
 
 use common\io\Directory;
 use common\io\File;
+use common\io\Manager;
 use common\io\NoParentAvailableException;
+use common\io\Paths;
 use PHPUnit\Framework\TestCase;
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -79,6 +81,44 @@ class DirectoryTest extends TestCase {
 	public function testVarious() {
 		self::assertEquals((string)$this->dir->get("lib"), $this->dir->get("lib")->getPath());
 		self::assertTrue($this->dir->get("testDirectory")->isDirectory());
+		self::assertEquals($this->dir->count(), count($this->dir));
+		self::assertEquals("/", Paths::normalize("/lib/../"));
+	}
+
+	public function testAdapter() {
+		$ftp = new class(".") extends Directory {
+			public function __construct($dir, $filesystem = NULL) {
+				parent::__construct($dir, $filesystem);
+				$this->protocol = "ftp"; // set virtual protocol
+				Manager::addAdapter(
+					$this->getProtocol(),
+					new League\Flysystem\Adapter\Ftp(
+						[
+							'host'    => 'speedtest.tele2.net',
+							'port'    => 21,
+							'root'    => '/',
+							'passive' => true,
+							'ssl'     => false,
+							'timeout' => 30,
+						]
+					)
+				);
+			}
+		};
+
+		/* copy "100KB.zip" on ftp server to local dir "testDirRANDOMNUMBER" */
+		$kbFile = $ftp->getFile("1KB.zip")->copy(
+			$this->dir->mkdir("testDir" . random_int(0, 9999999999))
+		);
+		self::assertEquals(1024, $kbFile->getSize());
+	}
+
+	public function testSearch() {
+		self::assertCount(1, $this->dir->search("testFileRenamed"));
+		self::assertCount(1, $this->dir->searchDirectory("testDirectoryForCopy"));
+		$this->dir->mkdir("testSearch")->createFile("search.txt", "search");
+		//self::assertCount(1, $this->dir->searchFile("search.txt"));
+		//self::assertCount(1, $this->dir->searchContent("search"));
 	}
 
 	public function testDeleteDirectory() {

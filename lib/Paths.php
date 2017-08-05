@@ -2,7 +2,7 @@
 
 namespace common\io;
 
-use LogicException;
+use League\Flysystem\Util;
 
 /**
  * Class Paths
@@ -13,32 +13,19 @@ class Paths {
 	/**
 	 * Normalize a path
 	 *
-	 * @param   string $path      path
-	 * @param   string $separator separator
+	 * @param   string $path path
 	 *
 	 * @return  string  normalized path
-	 * @see http://stackoverflow.com/a/20545583
 	 */
-	public static function normalize(string $path, string $separator = '\\/'): string {
-		$a          = ($path);
-		$path       = str_replace("\\", "/", $path);
-		$normalized = preg_replace('#\p{C}+|^\./#u', '', $path);
-		$normalized = preg_replace('#/\.(?=/)|^\./|\./$#', '', $normalized);
-		$regex      = '#\/*[^/\.]+/\.\.#Uu';
-		while (preg_match($regex, $normalized)) {
-			$normalized = preg_replace($regex, '', $normalized);
-		}
-		if (preg_match('#/\.{2}|\.{2}/#', $normalized)) {
-			throw new LogicException(
-				'Path is outside of the defined root, path: [' . $path . '], resolved: [' . $normalized . ']'
-			);
-		}
-		$path = preg_replace('/([A-Za-z]*?):\/\/(\/*)(.*)/', '$1://$3', trim($normalized, $separator));
-		if (strpos($path, "://") === false) {
-			$path = "/" . ltrim($path, "/");
+	public static function normalize(string $path): string {
+		if (!(false === strpos($path, '://'))) {
+			$ex      = explode("://", $path);
+			$protocl = $ex[0];
+
+			return $protocl . "://" . Util::normalizePath("/" . ltrim($ex[1], "/"));
 		}
 
-		return $path;
+		return "/" . ltrim(Util::normalizePath($path), "/");
 	}
 
 	/**
@@ -63,7 +50,7 @@ class Paths {
 	 * @return mixed
 	 */
 	public static function getFile(string $path): string {
-		$e = explode("/", $path);
+		$e = explode("/", rtrim($path, "/"));
 
 		return $e[count($e) - 1];
 	}

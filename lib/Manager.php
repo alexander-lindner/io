@@ -25,19 +25,6 @@ class Manager {
 	private static $filesystems = [];
 
 	/**
-	 * get all registered filesystems
-	 *
-	 * @return array
-	 */
-	public static function getFilesystems(): array {
-		if (is_null(static::$manager)) {
-			self::init();
-		}
-
-		return self::$filesystems;
-	}
-
-	/**
 	 * init default filesystems
 	 */
 	private static function init() {
@@ -57,7 +44,7 @@ class Manager {
 	 */
 	public static function addAdapter(string $name, AdapterInterface $adapter) {
 		$adapter = new Filesystem($adapter);
-		if (is_null(static::$manager) && empty(self::$filesystems)) {
+		if (static::$manager == NULL && empty(self::$filesystems)) {
 			self::init();
 		}
 		self::$filesystems[$name] = $adapter;
@@ -71,7 +58,7 @@ class Manager {
 	 * @return MountManager
 	 */
 	public static function getManager(): MountManager {
-		if (is_null(static::$manager)) {
+		if (static::$manager == NULL) {
 			self::init();
 		}
 
