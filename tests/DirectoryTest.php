@@ -97,12 +97,15 @@ class DirectoryTest extends TestCase {
 		self::assertEquals("/", Paths::normalize("/lib/../"));
 		self::assertTrue(isset($this->dir["testDirectory"]["testFileRenamed"]));
 		self::assertTrue(isset($this->dir["testDirectory"]));
-		$this->dir["testDirectory"]["testFileArrayAccess"] = "TestContent";
-		self::assertEquals("TestContent", $this->dir->get("testDirectory/testFileArrayAccess")->getContent());
+		self::assertFalse(isset($this->dir["testDirectory5555"]));
+		$this->dir["testDirectory"]["testFileArrayAccess.txt"] = "TestContent";
+		self::assertEquals("TestContent", $this->dir->get("testDirectory/testFileArrayAccess.txt")->getContent());
+		$this->dir["testDirectory"]["testFileArrayAccess.txt"] = "TestSet";
+		self::assertEquals("TestSet", $this->dir->get("testDirectory/testFileArrayAccess.txt")->getContent());
 		self::expectException(LogicException::class);
 		$this->dir["testDirectory"] = "TestContent";
-		unset($this->dir["testDirectory"]["testFileArrayAccess"]);
-		self::assertFileNotExists("." . $this->dir["testDirectory"]["testFileArrayAccess"]->getPath());
+		unset($this->dir["testDirectory"]["testFileArrayAccess.txt"]);
+		self::assertFileNotExists("." . $this->dir["testDirectory"]["testFileArrayAccess.txt"]->getPath());
 	}
 
 	public function testAdapter() {

@@ -485,10 +485,7 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 * @throws FileNotFoundException
 	 */
 	public function offsetUnset($offset) {
-		$thing = $this->get($offset);
-
-
-		$thing->delete();
+		$this->get($offset)->delete();
 	}
 
 	/**
