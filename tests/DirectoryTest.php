@@ -1,6 +1,7 @@
 <?php
 
 use common\io\Directory;
+use common\io\exceptions\DirectoryNotFoundException;
 use common\io\exceptions\NoParentAvailableException;
 use common\io\File;
 use common\io\Manager;
@@ -53,6 +54,17 @@ class DirectoryTest extends TestCase {
 				self::assertDirectoryExists("." . $list->getPath());
 			}
 		}
+		self::expectException(DirectoryNotFoundException::class);
+		$this->dir->get(random_int(0, PHP_INT_MAX))->listContents();
+	}
+
+	public function testInit() {
+		self::expectException(RuntimeException::class);
+		new Directory([]);
+
+		self::expectException(RuntimeException::class);
+		new Directory(["object" => new Directory(".")]);
+
 	}
 
 	public function testCopy() {
@@ -83,6 +95,14 @@ class DirectoryTest extends TestCase {
 		self::assertTrue($this->dir->get("testDirectory")->isDirectory());
 		self::assertEquals($this->dir->count(), count($this->dir));
 		self::assertEquals("/", Paths::normalize("/lib/../"));
+		self::assertTrue(isset($this->dir["testDirectory"]["testFileRenamed"]));
+		self::assertTrue(isset($this->dir["testDirectory"]));
+		$this->dir["testDirectory"]["testFileArrayAccess"] = "TestContent";
+		self::assertEquals("TestContent", $this->dir->get("testDirectory/testFileArrayAccess")->getContent());
+		self::expectException(LogicException::class);
+		$this->dir["testDirectory"] = "TestContent";
+		unset($this->dir["testDirectory"]["testFileArrayAccess"]);
+		self::assertFileNotExists("." . $this->dir["testDirectory"]["testFileArrayAccess"]->getPath());
 	}
 
 	public function testAdapter() {
@@ -119,6 +139,14 @@ class DirectoryTest extends TestCase {
 		$this->dir->mkdir("testSearch")->createFile("search.txt", "search");
 		self::assertCount(1, $this->dir->searchFile("search.txt"));
 		self::assertCount(1, $this->dir->searchContent("search"));
+	}
+
+	public function testPrintTree() {
+		ob_start();
+		$this->dir->printTree();
+		$content = ob_get_clean();
+		self::assertNotEmpty($content);
+
 	}
 
 	public function testDeleteDirectory() {

@@ -3,6 +3,7 @@
 namespace common\io;
 
 use ArrayAccess;
+use common\io\exceptions\DirectoryNotFoundException;
 use common\io\exceptions\NoParentAvailableException;
 use common\io\filter\Search;
 use common\io\filter\SearchContent;
@@ -11,6 +12,7 @@ use IteratorAggregate;
 use League\Flysystem\FileNotFoundException;
 use League\Flysystem\Filesystem;
 use League\Flysystem\MountManager;
+use LogicException;
 
 /**
  * Class Directory
@@ -38,7 +40,6 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 * @var string
 	 */
 	private $dirPath;
-
 	/**
 	 * @var bool
 	 */
@@ -51,19 +52,23 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	/**
 	 * Directory constructor.
 	 *
-	 * @param string|array            $dir
-	 * @param Filesystem|MountManager $filesystem
+	 * @param string|[] $dir
+	 *
+	 * @throws \RuntimeException
 	 */
-	public function __construct($dir, $filesystem = NULL) {
-		if (is_array($dir) && isset($dir["object"]) && $dir["object"] instanceof Directory) {
+	public function __construct($dir) {
+		if (is_array($dir)) {
+			if (!isset($dir["object"]) || !($dir["object"] instanceof Directory)) {
+				throw new \RuntimeException("No parent object given");
+			}
+			if (!isset($dir["path"])) {
+				throw new \RuntimeException("No path given");
+			}
 			$this->parent          = $dir["object"];
 			$this->dirPath         = $dir["path"];
 			$this->recursiveFilter = $this->getParent()->getRecursiveFilter();
 		} else {
-			if (is_null($filesystem)) {
-				$filesystem = Manager::getManager();
-			}
-			$this->dir             = $filesystem;
+			$this->dir             = Manager::getManager();
 			$this->dirPath         = Paths::normalize($dir);
 			$this->isRoot          = true;
 			$this->recursiveFilter = new FilterArray();
@@ -83,7 +88,7 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 * get Parent directory
 	 *
 	 * @return Directory
-	 * @throws \common\io\NoParentAvailableException
+	 * @throws NoParentAvailableException
 	 */
 	public function getParent(): Directory {
 		return $this->parent();
@@ -248,8 +253,7 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 * @return Directory
 	 */
 	public function delete() {
-		$this->loadDir();
-		$this->dir->deleteDir($this->getFullPath());
+		$this->getDir()->deleteDir($this->getFullPath());
 		if ($this->isIsRoot()) {
 			return NULL;
 		} else {
@@ -277,7 +281,7 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 * @param bool $recursion recursion
 	 *
 	 * @return array
-	 * @throws \common\io\DirectoryNotFoundException
+	 * @throws DirectoryNotFoundException
 	 */
 	public function listContents(bool $recursion = true): array {
 		$a        = [];
@@ -356,7 +360,13 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 * @return bool
 	 */
 	public function offsetExists($offset) {
-		return isset($this->listContents(false)[$offset]);
+		foreach ($this->listContents(false) as $listContent) {
+			if ($listContent->getName() == $offset) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -365,7 +375,7 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 * @param string $offset
 	 *
 	 * @return Directory|File
-	 * @throws \League\Flysystem\FileNotFoundException
+	 * @throws FileNotFoundException
 	 */
 	public function offsetGet($offset) {
 		return $this->get($offset);
@@ -435,27 +445,21 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 * @param string $offset
 	 * @param string $value
 	 *
-	 * @return Directory
-	 * @throws \League\Flysystem\FileNotFoundException
+	 * @throws LogicException
 	 */
 	public function offsetSet($offset, $value) {
-		if ($offset == "..") {
-			return $this->parent();
+		$thing = $this->get($offset);
+		if (!$thing->isFile() && $thing->isDirectory()) {
+			throw  new LogicException("Cannot write to directory.");
 		}
-		$c = $this->listContents(false);
-		if (!isset($c[$offset])) {
-			throw new FileNotFoundException($this->dirPath . "/" . $offset);
-		}
-
 		/**
 		 * @var Directory|File $thing
 		 */
-		$thing = $c[$offset];
 
 		if ($thing->isFile()) {
 			$thing->write($value);
 		} else {
-			$thing->createFile($value);
+			$this->createFile($offset, $value);
 		}
 	}
 
@@ -468,7 +472,6 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 * @return File
 	 */
 	public function createFile(string $name, string $content = ""): File {
-		$this->loadDir();
 		$this->getDir()->put($this->getFullPath() . "/" . $name, $content);
 
 		return new File($name, $this);
@@ -479,18 +482,12 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 *
 	 * @param string $offset
 	 *
-	 * @throws \League\Flysystem\FileNotFoundException
+	 * @throws FileNotFoundException
 	 */
 	public function offsetUnset($offset) {
-		$c = $this->listContents(false);
-		if (!isset($c[$offset])) {
-			throw new FileNotFoundException($this->dirPath . "/" . $offset);
-		}
+		$thing = $this->get($offset);
 
-		/**
-		 * @var Directory|File $thing
-		 */
-		$thing = $c[$offset];
+
 		$thing->delete();
 	}
 
@@ -557,23 +554,6 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 		if (isset($this->recursiveFilter[$index])) {
 			unset($this->recursiveFilter[$index]);
 		}
-	}
-
-	/**
-	 * @param string             $word
-	 * @param File[]|Directory[] $content
-	 *
-	 * @return File[]|Directory[]
-	 */
-	public function fullSearch(string $word, $content) {
-		$result = [];
-		foreach ($content as $item) {
-			if (strpos(strtolower($item->getPath()), strtolower($word)) !== false) {
-				$result[] = $item;
-			}
-		}
-
-		return $result;
 	}
 
 	/**
