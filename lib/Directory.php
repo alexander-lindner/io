@@ -3,6 +3,7 @@
 namespace common\io;
 
 use ArrayAccess;
+use common\io\exceptions\NoParentAvailableException;
 use common\io\filter\Search;
 use common\io\filter\SearchContent;
 use Countable;
@@ -92,7 +93,7 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 * get Parent directory
 	 *
 	 * @return Directory
-	 * @throws \common\io\NoParentAvailableException
+	 * @throws NoParentAvailableException
 	 */
 	public function parent(): Directory {
 		if ($this->isIsRoot() || is_null($this->parent)) {

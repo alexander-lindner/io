@@ -1,6 +1,6 @@
 <?php
 
-namespace common\io;
+namespace common\io\exceptions;
 
 use LogicException;
 

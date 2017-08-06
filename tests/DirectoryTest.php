@@ -1,9 +1,9 @@
 <?php
 
 use common\io\Directory;
+use common\io\exceptions\NoParentAvailableException;
 use common\io\File;
 use common\io\Manager;
-use common\io\NoParentAvailableException;
 use common\io\Paths;
 use PHPUnit\Framework\TestCase;
 
