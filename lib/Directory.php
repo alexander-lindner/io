@@ -3,6 +3,8 @@
 namespace common\io;
 
 use ArrayAccess;
+use common\io\filter\Search;
+use common\io\filter\SearchContent;
 use Countable;
 use IteratorAggregate;
 use League\Flysystem\FileNotFoundException;
@@ -240,6 +242,135 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	}
 
 	/**
+	 * Delete current directory
+	 *
+	 * @return Directory
+	 */
+	public function delete() {
+		$this->loadDir();
+		$this->dir->deleteDir($this->getFullPath());
+		if ($this->isIsRoot()) {
+			return NULL;
+		} else {
+			return $this->getParent();
+		}
+	}
+
+	private function loadDir() {
+		if (is_null($this->dir)) {
+			$this->dir = $this->getDir();
+			$this->dir->get($this->getFullPath());
+		}
+	}
+
+	/**
+	 * How many files and dirs do we have
+	 */
+	public function count() {
+		return count($this->listContents(false));
+	}
+
+	/**
+	 * get all files and directory in current path
+	 *
+	 * @param bool $recursion recursion
+	 *
+	 * @return array
+	 * @throws \common\io\DirectoryNotFoundException
+	 */
+	public function listContents(bool $recursion = true): array {
+		$a        = [];
+		$files    = [];
+		$dirs     = [];
+		$contents = $this->getDir()->listContents($this->getFullPath(), $recursion);
+		if (!$this->isDirectory()) {
+			throw new DirectoryNotFoundException();
+		}
+		foreach ($contents as $file) {
+			$file["path"] = "/" . ltrim($file["path"], '/');
+			if ($file["type"] == "file") {
+				$files[] = $file;
+			} else {
+				$dirs[$file["path"]] = new Directory(["object" => $this, "path" => $file["path"]]);
+			}
+		}
+		foreach ($dirs as $key => $dir) {
+			$add = true;
+			foreach ($this->filter as $i => $filter) {
+				if (Utils::isClosure($filter)) {
+					/**
+					 * @var \Closure $filter
+					 */
+					$add = $add && call_user_func($filter, $dir);
+				} else {
+					/**
+					 * @var Filter $filter
+					 */
+					$add = $add && $filter->filter($dir);
+				}
+			}
+			if ($add) {
+				$a[] = $dir;
+			}
+		}
+		foreach ($files as $file) {
+			$path    = Paths::normalize($file["dirname"]);
+			$parent  = $path == "/" || !isset($dirs[$path]) ? $this : $dirs[$path];
+			$files[] = $f = new File($file["basename"], $parent);
+
+			$add = true;
+			foreach ($this->filter as $i => $filter) {
+				if (Utils::isClosure($filter)) {
+					/**
+					 * @var \Closure $filter
+					 */
+					$add = $add && call_user_func($filter, $f);
+				} else {
+					/**
+					 * @var Filter $filter
+					 */
+					$add = $add && $filter->filter($f);
+				}
+			}
+			if ($add) {
+				$a[] = $f;
+			}
+		}
+
+		return $a;
+	}
+
+	/**
+	 * @return \ArrayIterator
+	 */
+	public function getIterator() {
+		return new \ArrayIterator($this->listContents(false));
+	}
+
+	/**
+	 * Array access
+	 *
+	 * @param string $offset
+	 *
+	 * @return bool
+	 */
+	public function offsetExists($offset) {
+		return isset($this->listContents(false)[$offset]);
+	}
+
+	/**
+	 * Array access
+	 *
+	 * @param string $offset
+	 *
+	 * @return Directory|File
+	 * @throws \League\Flysystem\FileNotFoundException
+	 */
+	public function offsetGet($offset) {
+		return $this->get($offset);
+	}
+
+	/**
 	 * get a sub directory of current directory
 	 *
 	 * @param string $path name of directory
@@ -295,98 +426,6 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 		$this->loadDir();
 
 		return new File($path, $this);
-	}
-
-	private function loadDir() {
-		if (is_null($this->dir)) {
-			$this->dir = $this->getDir();
-			$this->dir->get($this->getFullPath());
-		}
-	}
-
-	/**
-	 * Delete current directory
-	 *
-	 * @return Directory
-	 */
-	public function delete() {
-		$this->loadDir();
-		$this->dir->deleteDir($this->getFullPath());
-		if ($this->isIsRoot()) {
-			return NULL;
-		} else {
-			return $this->getParent();
-		}
-	}
-
-	/**
-	 * How many files and dirs do we have
-	 */
-	public function count() {
-		return count($this->listContents(false));
-	}
-
-	/**
-	 * get all files and directory in current path
-	 *
-	 * @param bool $recursion recursion
-	 *
-	 * @return Directory[]|File[]
-	 */
-	public function listContents(bool $recursion = true): array {
-		$a        = [];
-		$contents = $this->getDir()->listContents($this->getFullPath(), $recursion);
-
-		foreach ($contents as $file) {
-			$file["path"] = "/" . ltrim($file["path"], '/');
-			if ($file["type"] == "file") {
-				$dirOrFile = new File($file["path"], $this);
-			} else {
-				$dirOrFile = new Directory(["object" => $this, "path" => $file["path"]]);
-			}
-			$add = true;
-			foreach ($this->filter as $i => $filter) {
-				/**
-				 * @var Filter $filter
-				 */
-				$add = $add && $filter->filter($dirOrFile);
-			}
-			if ($add) {
-				$a[$dirOrFile->getName()] = $dirOrFile;
-			}
-		}
-
-		return $a;
-	}
-
-	/**
-	 * @return \ArrayIterator
-	 */
-	public function getIterator() {
-		return new \ArrayIterator($this->listContents(false));
-	}
-
-	/**
-	 * Array access
-	 *
-	 * @param string $offset
-	 *
-	 * @return bool
-	 */
-	public function offsetExists($offset) {
-		return isset($this->listContents(false)[$offset]);
-	}
-
-	/**
-	 * Array access
-	 *
-	 * @param string $offset
-	 *
-	 * @return Directory|File
-	 * @throws \League\Flysystem\FileNotFoundException
-	 */
-	public function offsetGet($offset) {
-		return $this->get($offset);
 	}
 
 	/**
@@ -460,28 +499,33 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 * @return \common\io\File[]
 	 */
 	public function searchFile(string $word) {
-		foreach ($this->listFiles(true) as $listFile) {
-			echo $listFile->getFullPath() . PHP_EOL;
-		}
+		$index   = $this->addFilter(new Search($word));
+		$content = $this->listFiles(true);
+		$this->removeFilter($index);
 
-		return $this->fullSearch($word, $this->listFiles(true));
+		return $content;
 	}
 
 	/**
-	 * @param string             $word
-	 * @param File[]|Directory[] $content
+	 * add an (file) filter
 	 *
-	 * @return File[]|Directory[]
+	 * @param Filter|\Closure $filter
+	 * @param bool            $recursive
+	 *
+	 * @return int filter index
 	 */
-	public function fullSearch(string $word, $content) {
-		$result = [];
-		foreach ($content as $item) {
-			if (strpos(strtolower($item->getPath()), strtolower($word)) !== false) {
-				$result[] = $item;
-			}
+	public function addFilter($filter, bool $recursive = false) {
+		if (!is_object($filter)) {
+			$filter = new $filter;
 		}
 
-		return $result;
+		$this->filter[] = $filter;
+
+		if ($recursive) {
+			$this->recursiveFilter[$this->filter->getCounter()] = $filter;
+		}
+
+		return $this->filter->getCounter();
 	}
 
 	/**
@@ -507,28 +551,6 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 		return $result;
 	}
 
-	/**
-	 * add an (file) filter
-	 *
-	 * @param Filter $filter
-	 * @param bool   $recursive
-	 *
-	 * @return int filter index
-	 */
-	public function addFilter($filter, bool $recursive = false) {
-		if (!is_object($filter)) {
-			$filter = new $filter;
-		}
-
-		$this->filter[] = $filter;
-
-		if ($recursive) {
-			$this->recursiveFilter[$this->filter->getCounter()] = $filter;
-		}
-
-		return $this->filter->getCounter();
-	}
-
 	public function removeFilter($index) {
 		unset($this->filter[$index]);
 		if (isset($this->recursiveFilter[$index])) {
@@ -537,12 +559,33 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	}
 
 	/**
+	 * @param string             $word
+	 * @param File[]|Directory[] $content
+	 *
+	 * @return File[]|Directory[]
+	 */
+	public function fullSearch(string $word, $content) {
+		$result = [];
+		foreach ($content as $item) {
+			if (strpos(strtolower($item->getPath()), strtolower($word)) !== false) {
+				$result[] = $item;
+			}
+		}
+
+		return $result;
+	}
+
+	/**
 	 * @param string $word
 	 *
 	 * @return \common\io\Directory[]
 	 */
 	public function searchDirectory(string $word) {
-		return $this->fullSearch($word, $this->listDirectories(true));
+		$index   = $this->addFilter(new Search($word));
+		$content = $this->listDirectories(true);
+		$this->removeFilter($index);
+
+		return $content;
 	}
 
 	/**
@@ -575,14 +618,11 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 * @return File[]
 	 */
 	public function searchContent($word) {
-		$result = [];
-		foreach ($this->listFiles(true) as $listFile) {
-			if (strpos(strtolower($listFile->getContent()), strtolower($word)) !== false) {
-				$result[] = $listFile;
-			}
-		}
+		$index   = $this->addFilter(new SearchContent($word));
+		$content = $this->listFiles(true);
+		$this->removeFilter($index);
 
-		return $result;
+		return $content;
 	}
 
 	/**
@@ -593,7 +633,11 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 * @return Directory[]|File[]
 	 */
 	public function search(string $word) {
-		return $this->fullSearch($word, $this->listContents(true));
+		$index   = $this->addFilter(new Search($word));
+		$content = $this->listContents(true);
+		$this->removeFilter($index);
+
+		return $content;
 	}
 
 	/**

@@ -117,8 +117,8 @@ class DirectoryTest extends TestCase {
 		self::assertCount(1, $this->dir->search("testFileRenamed"));
 		self::assertCount(1, $this->dir->searchDirectory("testDirectoryForCopy"));
 		$this->dir->mkdir("testSearch")->createFile("search.txt", "search");
-		//self::assertCount(1, $this->dir->searchFile("search.txt"));
-		//self::assertCount(1, $this->dir->searchContent("search"));
+		self::assertCount(1, $this->dir->searchFile("search.txt"));
+		self::assertCount(1, $this->dir->searchContent("search"));
 	}
 
 	public function testDeleteDirectory() {
