@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <phpunit bootstrap="vendor/autoload.php">
-    <testsuites>
-        <testsuite name="Example">
-            <file>./tests/DirectoryTest.php</file>
-        </testsuite>
-    </testsuites>
     <logging>
-        <log type="coverage-clover" target="clover.xml"/>
+        <log type="coverage-clover" target="coverage.xml"/>
+        <log type="coverage-html" target="./coverage-html"/>
     </logging>
     <filter>
         <whitelist>

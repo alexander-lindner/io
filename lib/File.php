@@ -213,23 +213,7 @@ class File {
 	 * @return Directory
 	 */
 	public function getDirectory(): Directory {
-		if (is_object($this->directory) && !is_null($this->directory)) {
-			return $this->directory;
-		} else {
-			return $this->directory = new Directory($this->getParentDirectory());
-		}
-	}
-
-	/**
-	 * get directory string of file
-	 *
-	 * @return string
-	 */
-	public function getParentDirectory(): string {
-		$ex = explode("/", $this->directory->getProtocol() . $this->getPath());
-		unset($ex[count($ex) - 1]);
-
-		return implode("/", $ex);
+		return $this->directory;
 	}
 
 	/**
@@ -275,6 +259,9 @@ class File {
 		return false;
 	}
 
+	/**
+	 * @param string $content
+	 */
 	public function write(string $content) {
 		$this->file->put($this->getFullPath(), $content);
 	}

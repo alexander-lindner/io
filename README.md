@@ -12,9 +12,9 @@ use Sabre\DAV\Client;
 $local = new Directory(".");
 
 $webdav = new class(".") extends Directory {
-	public function __construct($dir, $filesystem = NULL) {
+	public function __construct($dir) {
 		$this->protocol = "webdav";
-        parent::__construct($dir, $filesystem);
+        parent::__construct($dir);
 
         Manager::addAdapter(
             $this->getProtocol(),
@@ -95,9 +95,9 @@ namespace common\io;
 use League\Flysystem\Adapter\Ftp as Adapter;
 
 class Ftp extends Directory {
-	public function __construct($dir, $filesystem = NULL) {
+	public function __construct($dir) {
 		$this->protocol = "ftp";
-		parent::__construct($dir, $filesystem);
+		parent::__construct($dir);
 		Manager::addAdapter(
 			$this->getProtocol(),
 			new Adapter(
@@ -155,8 +155,8 @@ $local = $lib->parent(); //redundant, just for demonstration
 
 /* using php7 to get a new ftp object */
 $ftp = new class(".") extends Directory {
-	public function __construct($dir, $filesystem = NULL) {
-		parent::__construct($dir, $filesystem);
+	public function __construct($dir) {
+		parent::__construct($dir);
 		$this->protocol = "ftp"; // set virtual protocol
 		Manager::addAdapter(
 			$this->getProtocol(),

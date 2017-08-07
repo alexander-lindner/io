@@ -14,48 +14,51 @@ class DirectoryTest extends TestCase {
 	/**
 	 * @var Directory
 	 */
-	protected $dir;
+	protected static $dir;
 
-	public function __construct($name = NULL, array $data = [], $dataName = '') {
-		parent::__construct($name, $data, $dataName);
+	public static function setUpBeforeClass() {
 		(new Directory("."))->get("test")->mkdir();
-		$this->dir = new Directory("./test/");
+		self::$dir = new Directory("./test/");
+	}
+
+	public static function tearDownAfterClass() {
+		self::$dir->delete();
 	}
 
 	public function testMkdir() {
-		self::assertDirectoryExists("." . $this->dir->get("testDirectory")->mkdir()->getPath());
-		self::assertDirectoryExists("." . $this->dir->get("testDirectory")->mkdir("testMkdir")->getPath());
+		self::assertDirectoryExists("." . self::$dir->get("testDirectory")->mkdir()->getPath());
+		self::assertDirectoryExists("." . self::$dir->get("testDirectory")->mkdir("testMkdir")->getPath());
 	}
 
 	public function testFileCreate() {
-		self::assertFileExists("." . $this->dir->get("testDirectory")->createFile("testFile", "test")->getPath());
+		self::assertFileExists("." . self::$dir->get("testDirectory")->createFile("testFile", "test")->getPath());
 	}
 
 	public function testParent() {
-		self::assertEquals($this->dir, $this->dir->get("testDirectory")->parent());
+		self::assertEquals(self::$dir, self::$dir->get("testDirectory")->parent());
 		self::expectException(NoParentAvailableException::class);
-		$this->dir->parent();
+		self::$dir->parent();
 	}
 
 	public function testListContents() {
-		self::assertInternalType('array', $this->dir->listContents(false));
-		self::assertGreaterThan(0, count($this->dir->listContents(true)));
-		foreach ($this->dir->listFiles() as $listFile) {
+		self::assertInternalType('array', self::$dir->listContents(false));
+		self::assertGreaterThan(0, count(self::$dir->listContents(true)));
+		foreach (self::$dir->listFiles() as $listFile) {
 			self::assertTrue($listFile->isFile());
 		}
-		foreach ($this->dir->listDirectories() as $listFile) {
+		foreach (self::$dir->listDirectories() as $listFile) {
 			self::assertTrue($listFile->isDirectory());
 		}
-		foreach ($this->dir as $list) {
+		foreach (self::$dir as $list) {
 			self::assertDirectoryExists("." . $list->getPath());
 		}
-		foreach ($this->dir["testDirectory"] as $list) {
+		foreach (self::$dir["testDirectory"] as $list) {
 			if ($list->isDirectory()) {
 				self::assertDirectoryExists("." . $list->getPath());
 			}
 		}
 		self::expectException(DirectoryNotFoundException::class);
-		$this->dir->get(random_int(0, PHP_INT_MAX))->listContents();
+		self::$dir->get(random_int(0, PHP_INT_MAX))->listContents();
 	}
 
 	public function testInit() {
@@ -68,50 +71,50 @@ class DirectoryTest extends TestCase {
 	}
 
 	public function testCopy() {
-		self::assertFileExists("." . $this->dir->get("testDirectory")->getFile("testFile")->copy($this->dir->get("testDirectoryForCopy"))->getPath());
+		self::assertFileExists("." . self::$dir->get("testDirectory")->getFile("testFile")->copy(self::$dir->get("testDirectoryForCopy"))->getPath());
 	}
 
 	public function testRename() {
-		self::assertTrue($this->dir->get("testDirectory/subTestDirectory")->mkdir()->rename("subTestDirectoryRenamed"));
-		self::assertDirectoryExists("." . $this->dir->get("testDirectory/subTestDirectoryRenamed")->getPath());
+		self::assertTrue(self::$dir->get("testDirectory/subTestDirectory")->mkdir()->rename("subTestDirectoryRenamed"));
+		self::assertDirectoryExists("." . self::$dir->get("testDirectory/subTestDirectoryRenamed")->getPath());
 
-		self::assertTrue($this->dir->get("testDirectory/testFile")->rename("testFileRenamed"));
-		self::assertFileExists("." . $this->dir->get("testDirectory/testFileRenamed")->getPath());
+		self::assertTrue(self::$dir->get("testDirectory/testFile")->rename("testFileRenamed"));
+		self::assertFileExists("." . self::$dir->get("testDirectory/testFileRenamed")->getPath());
 	}
 
 	public function testFile() {
 		self::assertEquals(
-			$this->dir->get("testDirectory")->getFile("testFileRenamed")->md5(),
-			md5_file("." . $this->dir->get("testDirectory")->getFile("testFileRenamed")->getPath())
+			self::$dir->get("testDirectory")->getFile("testFileRenamed")->md5(),
+			md5_file("." . self::$dir->get("testDirectory")->getFile("testFileRenamed")->getPath())
 		);
 		self::assertEquals(
 			File::get("test/testDirectory/testFileRenamed")->md5(),
-			md5_file("." . $this->dir->get("testDirectory")->getFile("testFileRenamed")->getPath())
+			md5_file("." . self::$dir->get("testDirectory")->getFile("testFileRenamed")->getPath())
 		);
 	}
 
 	public function testVarious() {
-		self::assertEquals((string)$this->dir->get("lib"), $this->dir->get("lib")->getPath());
-		self::assertTrue($this->dir->get("testDirectory")->isDirectory());
-		self::assertEquals($this->dir->count(), count($this->dir));
+		self::assertEquals((string)self::$dir->get("lib"), self::$dir->get("lib")->getPath());
+		self::assertTrue(self::$dir->get("testDirectory")->isDirectory());
+		self::assertEquals(self::$dir->count(), count(self::$dir));
 		self::assertEquals("/", Paths::normalize("/lib/../"));
-		self::assertTrue(isset($this->dir["testDirectory"]["testFileRenamed"]));
-		self::assertTrue(isset($this->dir["testDirectory"]));
-		self::assertFalse(isset($this->dir["testDirectory5555"]));
-		$this->dir["testDirectory"]["testFileArrayAccess.txt"] = "TestContent";
-		self::assertEquals("TestContent", $this->dir->get("testDirectory/testFileArrayAccess.txt")->getContent());
-		$this->dir["testDirectory"]["testFileArrayAccess.txt"] = "TestSet";
-		self::assertEquals("TestSet", $this->dir->get("testDirectory/testFileArrayAccess.txt")->getContent());
+		self::assertTrue(isset(self::$dir["testDirectory"]["testFileRenamed"]));
+		self::assertTrue(isset(self::$dir["testDirectory"]));
+		self::assertFalse(isset(self::$dir["testDirectory5555"]));
+		self::$dir["testDirectory"]["testFileArrayAccess.txt"] = "TestContent";
+		self::assertEquals("TestContent", self::$dir->get("testDirectory/testFileArrayAccess.txt")->getContent());
+		self::$dir["testDirectory"]["testFileArrayAccess.txt"] = "TestSet";
+		self::assertEquals("TestSet", self::$dir->get("testDirectory/testFileArrayAccess.txt")->getContent());
 		self::expectException(LogicException::class);
-		$this->dir["testDirectory"] = "TestContent";
-		unset($this->dir["testDirectory"]["testFileArrayAccess.txt"]);
-		self::assertFileNotExists("." . $this->dir["testDirectory"]["testFileArrayAccess.txt"]->getPath());
+		self::$dir["testDirectory"] = "TestContent";
+		unset(self::$dir["testDirectory"]["testFileArrayAccess.txt"]);
+		self::assertFileNotExists("." . self::$dir["testDirectory"]["testFileArrayAccess.txt"]->getPath());
 	}
 
 	public function testAdapter() {
 		$ftp = new class(".") extends Directory {
-			public function __construct($dir, $filesystem = NULL) {
-				parent::__construct($dir, $filesystem);
+			public function __construct($dir) {
+				parent::__construct($dir);
 				$this->protocol = "ftp"; // set virtual protocol
 				Manager::addAdapter(
 					$this->getProtocol(),
@@ -131,37 +134,31 @@ class DirectoryTest extends TestCase {
 
 		/* copy "100KB.zip" on ftp server to local dir "testDirRANDOMNUMBER" */
 		$kbFile = $ftp->getFile("1KB.zip")->copy(
-			$this->dir->mkdir("testDir" . random_int(0, 9999999999))
+			self::$dir->mkdir("testDir" . random_int(0, 9999999999))
 		);
 		self::assertEquals(1024, $kbFile->getSize());
 	}
 
 	public function testSearch() {
-		self::assertCount(1, $this->dir->search("testFileRenamed"));
-		self::assertCount(1, $this->dir->searchDirectory("testDirectoryForCopy"));
-		$this->dir->mkdir("testSearch")->createFile("search.txt", "search");
-		self::assertCount(1, $this->dir->searchFile("search.txt"));
-		self::assertCount(1, $this->dir->searchContent("search"));
+		self::assertCount(1, self::$dir->search("testFileRenamed"));
+		self::assertCount(1, self::$dir->searchDirectory("testDirectoryForCopy"));
+		self::$dir->mkdir("testSearch")->createFile("search.txt", "search");
+		self::assertCount(1, self::$dir->searchFile("search.txt"));
+		self::assertCount(1, self::$dir->searchContent("search"));
 	}
 
 	public function testPrintTree() {
 		ob_start();
-		$this->dir->printTree();
+		self::$dir->printTree();
 		$content = ob_get_clean();
 		self::assertNotEmpty($content);
 
 	}
 
 	public function testDeleteDirectory() {
-		$this->dir->get("testDirectory")->delete();
-		$this->dir->get("testDirectoryForCopy")->delete();
-		self::assertDirectoryNotExists("." . $this->dir->get("testDirectory")->getPath());
-		self::assertDirectoryNotExists("." . $this->dir->get("testDirectoryForCopy")->getPath());
-	}
-
-
-	public function __destruct() {
-		$this->dir->delete();
-
+		self::$dir->get("testDirectory")->delete();
+		self::$dir->get("testDirectoryForCopy")->delete();
+		self::assertDirectoryNotExists("." . self::$dir->get("testDirectory")->getPath());
+		self::assertDirectoryNotExists("." . self::$dir->get("testDirectoryForCopy")->getPath());
 	}
 }
