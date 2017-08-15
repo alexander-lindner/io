@@ -547,6 +547,9 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	}
 
 	public function removeFilter($index) {
+		if (!isset($this->filter[$index])) {
+			throw  new LogicException("Filter not found. Index is not set.");
+		}
 		unset($this->filter[$index]);
 		if (isset($this->recursiveFilter[$index])) {
 			unset($this->recursiveFilter[$index]);

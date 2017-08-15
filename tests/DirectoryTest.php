@@ -65,9 +65,11 @@ class DirectoryTest extends TestCase {
 		self::expectException(RuntimeException::class);
 		new Directory([]);
 
+	}
+
+	public function testInit2() {
 		self::expectException(RuntimeException::class);
 		new Directory(["object" => new Directory(".")]);
-
 	}
 
 	public function testCopy() {
@@ -160,5 +162,9 @@ class DirectoryTest extends TestCase {
 		self::$dir->get("testDirectoryForCopy")->delete();
 		self::assertDirectoryNotExists("." . self::$dir->get("testDirectory")->getPath());
 		self::assertDirectoryNotExists("." . self::$dir->get("testDirectoryForCopy")->getPath());
+		self::$dir->get("testDirectory")->mkdir("testDelete");
+		$null = (new Directory("test/testDirectory/testDelete"))->delete();
+		self::assertNull($null);
+		self::assertDirectoryNotExists("./test/testDirectory/testDelete");
 	}
 }
