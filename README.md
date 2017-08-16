@@ -9,7 +9,6 @@ use common\io\Directory;
 use common\io\Manager;
 use League\Flysystem\WebDAV\WebDAVAdapter;
 use Sabre\DAV\Client;
-$local = new Directory(".");
 
 $webdav = new class(".") extends Directory {
 	public function __construct($dir) {
@@ -31,7 +30,11 @@ $webdav = new class(".") extends Directory {
 	}
 };
 
-$local->getFile("README.md")->copy($webdav->mkdir("testDir"));
+$local = new Directory(".");
+
+$local
+    ->getFile("README.md")
+    ->copy($webdav->mkdir("testDir"));
 ````
 ## Installation
 
