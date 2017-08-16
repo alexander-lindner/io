@@ -14,19 +14,18 @@ $local = new Directory(".");
 $webdav = new class(".") extends Directory {
 	public function __construct($dir) {
 		$this->protocol = "webdav";
-        parent::__construct($dir);
+		parent::__construct($dir);
 
-        Manager::addAdapter(
-            $this->getProtocol(),
-			    new WebDAVAdapter(
+		Manager::addAdapter(
+			$this->getProtocol(),
+			new WebDAVAdapter(
 				new Client(
-					 [
+					[
 						'baseUri'  => 'https://owncloud.domain.tld/',
 						'userName' => 'user',
 						'password' => '...'
 					]
-				),
-				"/remote.php/webdav/"
+				), "/remote.php/webdav/"
 			)
 		);
 	}
@@ -42,14 +41,23 @@ As always load composer in your main file: `require_once("vendor/autoload.php");
 
 ## Use it
 Using it is very simple. Just initialize a new php object from ***common\io\Directory***.
- 
+  ````php
+  <?php
+  use common\io\Directory;
+    
+  $test = new Directory(".");
+  ````
+  List all files and dirs:
  ````php
  <?php
  use common\io\Directory;
    
  $test = new Directory(".");
  foreach ($test->listContents() as $listContent) {
- 	print_r($listContent->getPath());
+    /**
+     * @var $listContent common\io\File|Directory
+     */
+    echo $listContent->getPath();
  }
  ````
  Get content of a directory structure:
@@ -59,7 +67,7 @@ Using it is very simple. Just initialize a new php object from ***common\io\Dire
 
   $test = new Directory(".");
   foreach ($test->get("vendor/bin")->listContents() as $listContent) {
-  	print_r($listContent->getPath());
+    echo $listContent->getPath();
   }
   ````
   
@@ -70,7 +78,7 @@ Using it is very simple. Just initialize a new php object from ***common\io\Dire
  
    $test = new Directory(".");
    foreach ($test->get("vendor/bin") as $listContent) {
-   	print_r($listContent->getPath());
+    echo $listContent->getPath();
    }
    ```` 
 ````php
@@ -79,7 +87,7 @@ use common\io\Directory;
 
 $test = new Directory(".");
 foreach ($test["vendor"]["bin"] as $listContent) {
-    print_r($listContent->getPath());
+    echo $listContent->getPath();
 }
 ```` 
    
