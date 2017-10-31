@@ -3,6 +3,7 @@
 namespace common\io;
 
 use ArrayAccess;
+use common\adapters\Adapter;
 use common\io\exceptions\DirectoryNotFoundException;
 use common\io\exceptions\NoParentAvailableException;
 use common\io\filter\Search;
@@ -56,22 +57,26 @@ class Directory implements Countable, IteratorAggregate, ArrayAccess {
 	 *
 	 * @throws \RuntimeException
 	 */
-	public function __construct($dir) {
-		if (is_array($dir)) {
-			if (!isset($dir["object"]) || !($dir["object"] instanceof Directory)) {
+	public function __construct($adapterOrDirectory) {
+		if (is_array($adapterOrDirectory)) {
+			if (!isset($adapterOrDirectory["object"]) || !( $adapterOrDirectory["object"] instanceof Directory )) {
 				throw new \RuntimeException("No parent object given");
 			}
-			if (!isset($dir["path"])) {
+			if (!isset($adapterOrDirectory["path"])) {
 				throw new \RuntimeException("No path given");
 			}
-			$this->parent          = $dir["object"];
-			$this->dirPath         = $dir["path"];
+			$this->parent          = $adapterOrDirectory["object"];
+			$this->dirPath         = $adapterOrDirectory["path"];
 			$this->recursiveFilter = $this->getParent()->getRecursiveFilter();
 		} else {
-			$this->dir             = Manager::getManager();
-			$this->dirPath         = Paths::normalize($dir);
-			$this->isRoot          = true;
-			$this->recursiveFilter = new FilterArray();
+			if (!is_subclass_of($adapterOrDirectory, Directory::class) && !is_subclass_of($adapterOrDirectory, Adapter::class)) {
+				throw new \RuntimeException("Directory class can't be called directly.");
+			} else {
+				$this->dir             = Manager::getManager();
+				$this->dirPath         = Paths::normalize($adapterOrDirectory);
+				$this->isRoot          = true;
+				$this->recursiveFilter = new FilterArray();
+			}
 		}
 		$this->filter  = new FilterArray();
 		$this->dirPath = Paths::trim($this->dirPath);

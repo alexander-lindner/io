@@ -1,5 +1,6 @@
 <?php
 
+use common\adapters\Local;
 use common\io\Directory;
 use common\io\exceptions\DirectoryNotFoundException;
 use common\io\exceptions\NoParentAvailableException;
@@ -17,8 +18,8 @@ class DirectoryTest extends TestCase {
 	protected static $dir;
 
 	public static function setUpBeforeClass() {
-		(new Directory("."))->get("test")->mkdir();
-		self::$dir = new Directory("./test/");
+		( new Local(".") )->get("test")->mkdir();
+		self::$dir = new Local("./test/");
 	}
 
 	public static function tearDownAfterClass() {
@@ -40,6 +41,10 @@ class DirectoryTest extends TestCase {
 		self::$dir->parent();
 	}
 
+	public function testDirectCall() {
+		self::expectException(NoParentAvailableException::class);
+		new Directory(".");
+	}
 	public function testListContents() {
 		self::assertInternalType('array', self::$dir->listContents(false));
 		self::assertGreaterThan(0, count(self::$dir->listContents(true)));
