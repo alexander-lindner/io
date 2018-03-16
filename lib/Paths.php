@@ -19,10 +19,9 @@ class Paths {
 	 */
 	public static function normalize(string $path): string {
 		if (!(false === strpos($path, '://'))) {
-			$ex      = explode("://", $path);
-			$protocl = $ex[0];
+			$ex = explode("://", $path);
 
-			return $protocl . "://" . Util::normalizePath("/" . ltrim($ex[1], "/"));
+			return $ex[0] . "://" . "/" . ltrim(Util::normalizePath("/" . ltrim($ex[1], "/")));
 		}
 
 		return "/" . ltrim(Util::normalizePath($path), "/");
@@ -69,5 +68,56 @@ class Paths {
 
 	public static function trim($dirPath) {
 		return "/" . rtrim(ltrim($dirPath, '/'), '/') . '/';
+	}
+
+	public static function appendPath($url, $path) {
+		$parts = self::parseUrl($url);
+		if (!isset($parts["path"])) {
+			$parts["path"] = "";
+		}
+		$parts["path"] .= "/" . $path;
+
+		return self::unparseUrl($parts);
+	}
+
+	/**
+	 * @param $parsed_url
+	 *
+	 * @return string
+	 * @see http://php.net/manual/de/function.parse-url.php#106731
+	 */
+	protected static function unparseUrl($parsed_url) {
+		$scheme   = isset($parsed_url['scheme']) ? $parsed_url['scheme'] . '://' : '';
+		$host     = isset($parsed_url['host']) ? $parsed_url['host'] : '';
+		$port     = isset($parsed_url['port']) ? ':' . $parsed_url['port'] : '';
+		$user     = isset($parsed_url['user']) ? $parsed_url['user'] : '';
+		$pass     = isset($parsed_url['pass']) ? ':' . $parsed_url['pass'] : '';
+		$pass     = ($user || $pass) ? "$pass@" : '';
+		$path     = isset($parsed_url['path']) ? $parsed_url['path'] : '';
+		$query    = isset($parsed_url['query']) ? '?' . $parsed_url['query'] : '';
+		$fragment = isset($parsed_url['fragment']) ? '#' . $parsed_url['fragment'] : '';
+
+		return "$scheme$user$pass$host$port$path$query$fragment";
+	}
+
+	public static function makeUrl($fragment, $default) {
+		$parts = self::parseUrl($fragment);
+		foreach (array_keys($default) as $key) {
+			$parts[$key] = $part ?? $default[$key];
+		}
+
+		return self::unparseUrl($parts);
+
+	}
+
+	public static function parseUrl($url) {
+		if (($parts = parse_url($url)) === false) {
+			$split = explode("://", $url);
+
+				return ["scheme" => $split[0], "path" => $split[1]];
+
+		} else {
+			return $parts;
+		}
 	}
 }

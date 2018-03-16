@@ -11,5 +11,5 @@ abstract class Filter {
 	public function __construct() {
 	}
 
-	abstract function filter($dirOrFile): bool;
+	abstract function filter(File $dirOrFile): bool;
 }

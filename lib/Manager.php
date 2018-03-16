@@ -8,6 +8,7 @@ use League\Flysystem\Cached\CachedAdapter;
 use League\Flysystem\Cached\Storage\Memory as CacheStore;
 use League\Flysystem\Filesystem;
 use League\Flysystem\MountManager;
+use League\Flysystem\Plugin\ListPaths;
 
 /**
  * Class Manager
@@ -29,9 +30,10 @@ class Manager {
 	 */
 	private static function init() {
 		static::$manager = new MountManager(self::$filesystems);
-		$local           = new CachedAdapter(new Local(getcwd()), new CacheStore());
+		$local           = new CachedAdapter(new Local("/", LOCK_EX, Local::SKIP_LINKS), new CacheStore());
 		self::addAdapter("local", $local);
 		self::addAdapter("file", $local);
+		self::$manager->addPlugin(new ListPaths());
 	}
 
 	/**

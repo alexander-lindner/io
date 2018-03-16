@@ -3,6 +3,7 @@
 namespace common\io\filter;
 
 
+use common\io\File;
 use common\io\Filter;
 use common\io\Utils;
 
@@ -13,7 +14,7 @@ class Search extends Filter {
 		$this->word = $word;
 	}
 
-	function filter($dirOrFile): bool {
+	function filter(File $dirOrFile): bool {
 		return Utils::strcontains(strtolower($dirOrFile->getName()), strtolower($this->word));
 	}
 }

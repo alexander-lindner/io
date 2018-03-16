@@ -1,6 +1,6 @@
 <?php
 
-use common\io\Directory;
+use common\io\File;
 use common\io\Filter;
 use common\io\Utils;
 use PHPUnit\Framework\TestCase;
@@ -9,12 +9,12 @@ require __DIR__ . '/../vendor/autoload.php';
 
 class FilterTest extends TestCase {
 	/**
-	 * @var Directory
+	 * @var File
 	 */
 	protected static $dir;
 
 	public static function setUpBeforeClass() {
-		self::$dir = (new Directory("."))->get("test")->mkdir();
+		self::$dir = (new File("."))->get("test")->mkdir();
 		self::$dir->get("directoryTest")->mkdir()->createFile("test.ext", "content");
 	}
 
@@ -26,7 +26,7 @@ class FilterTest extends TestCase {
 		self::assertCount(1, self::$dir);
 		self::$dir->addFilter(
 			new class() extends Filter {
-				function filter($dirOrFile): bool {
+				function filter(File $dirOrFile): bool {
 					if ($dirOrFile->isDirectory() && $dirOrFile->getName() == "directoryTest") {
 						return false;
 					}

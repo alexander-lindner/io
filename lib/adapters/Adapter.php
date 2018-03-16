@@ -1,14 +1,11 @@
 <?php
 
-namespace common\adapters;
+namespace common\io\adapters;
 
 interface Adapter {
-	public function getRootPath()
-	: string;
+	public function getRootPath(): string;
 
-	public function getCurrentPath()
-	: string;
+	public function getCurrentPath(): string;
 
-	public function getStartPath()
-	: string;
+	public function getStartPath(): string;
 }
