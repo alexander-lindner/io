@@ -65,7 +65,7 @@ class DirectoryTest extends TestCase {
 
 
 	public function testCopy() {
-		self::assertFileExists(self::$dir->get("testDirectory")->get("testFile")->copy(self::$dir->get("testDirectoryForCopy")));
+		self::assertFileExists(self::$dir->get("testDirectory")->get("testFile")->copy(self::$dir->get("testDirectoryForCopy"))->getAbsolutePath());
 	}
 
 	public function testRename() {

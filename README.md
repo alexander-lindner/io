@@ -5,14 +5,15 @@ to a oop structure and adds helpful utils.
 
 ````php
 <?php
-use common\io\Directory;
+use common\io\File;
 use common\io\Manager;
 use League\Flysystem\WebDAV\WebDAVAdapter;
 use Sabre\DAV\Client;
 
-$webdav = new class(".") extends Directory {
+$webdav = new class(".") extends File {
 	public function __construct($dir) {
-		$this->protocol = "webdav";
+		$this->defaultUrl = ["scheme" => "dav"];
+		$this->workingDir = "/";
 		parent::__construct($dir);
 
 		Manager::addAdapter(
@@ -30,10 +31,10 @@ $webdav = new class(".") extends Directory {
 	}
 };
 
-$local = new Directory(".");
+$local = new File(".");
 
 $local
-    ->getFile("README.md")
+    ->get("README.md")
     ->copy($webdav->mkdir("testDir"));
 ````
 ## Installation
@@ -46,29 +47,26 @@ As always load composer in your main file: `require_once("vendor/autoload.php");
 Using it is very simple. Just initialize a new php object from ***common\io\Directory***.
   ````php
   <?php
-  use common\io\Directory;
+  use common\io\File;
     
-  $test = new Directory(".");
+  $test = new File(".");
   ````
   List all files and dirs:
  ````php
  <?php
- use common\io\Directory;
+ use common\io\File;
    
- $test = new Directory(".");
+ $test = new File(".");
  foreach ($test->listContents() as $listContent) {
-    /**
-     * @var $listContent common\io\File|Directory
-     */
     echo $listContent->getPath();
  }
  ````
  Get content of a directory structure:
   ````php
   <?php
-  use common\io\Directory;
+  use common\io\File;
 
-  $test = new Directory(".");
+  $test = new File(".");
   foreach ($test->get("vendor/bin")->listContents() as $listContent) {
     echo $listContent->getPath();
   }
@@ -77,18 +75,18 @@ Using it is very simple. Just initialize a new php object from ***common\io\Dire
  `commons\io\Directory` implements **Countable, IteratorAggregate, ArrayAccess**, so it can be shorten:
    ````php
    <?php
-   use common\io\Directory;
+   use common\io\File;
  
-   $test = new Directory(".");
+   $test = new File(".");
    foreach ($test->get("vendor/bin") as $listContent) {
     echo $listContent->getPath();
    }
    ```` 
 ````php
 <?php
-use common\io\Directory;
+use common\io\File;
 
-$test = new Directory(".");
+$test = new File(".");
 foreach ($test["vendor"]["bin"] as $listContent) {
     echo $listContent->getPath();
 }
@@ -100,14 +98,15 @@ foreach ($test["vendor"]["bin"] as $listContent) {
 
 ```php
 <?php
-
-namespace common\io;
-
+use common\io\File;
+use common\io\Manager;
 use League\Flysystem\Adapter\Ftp as Adapter;
 
-class Ftp extends Directory {
+class Ftp extends File {
 	public function __construct($dir) {
-		$this->protocol = "ftp";
+		$this->defaultUrl = ["scheme" => "ftp"];
+		$this->workingDir = "/";
+		
 		parent::__construct($dir);
 		Manager::addAdapter(
 			$this->getProtocol(),
@@ -125,20 +124,18 @@ class Ftp extends Directory {
 	}
 }
 ```
-The protocol is used as a class internal virtual mapping and identifier.
+The protocol/scheme is used as a class internal virtual mapping and identifier.
 
 See [![Documentation](https://img.shields.io/badge/Documentation-api-orange.svg?style=flat-square)](https://common-libs.github.io/io/) for a full list of available methods.
-
-When getting a file (e.g. using `Directory->getFile()` or `Directory->listFiles()`) you get a new ***common\io\File*** object.
 
 ## Example
 ```php
 <?php
 
-use common\io\Directory;
+use common\io\File;
 use common\io\Manager;
 
-$local = new Directory("."); //current dir in vendor/common-libs/io/
+$local = new File("."); //current dir in vendor/common-libs/io/
 
 $file = $local->createFile("test", "hi"); // create file "test" with content hi
 echo $file->getContent() . PHP_EOL; // hi
@@ -162,13 +159,16 @@ foreach ($lib->listContents() as $listContent) {
 	echo $listContent->getPath() . PHP_EOL;
 }
 
-$local = $lib->parent(); //redundant, just for demonstration
+$local = $lib->getParent(); //redundant, just for demonstration
 
 /* using php7 to get a new ftp object */
-$ftp = new class(".") extends Directory {
+$ftp = new class(".") extends File {
 	public function __construct($dir) {
+		$this->defaultUrl = ["scheme" => "ftp"];
+		$this->workingDir = "/";
+        		
 		parent::__construct($dir);
-		$this->protocol = "ftp"; // set virtual protocol
+		
 		Manager::addAdapter(
 			$this->getProtocol(),
 			new League\Flysystem\Adapter\Ftp(
@@ -186,11 +186,10 @@ $ftp = new class(".") extends Directory {
 };
 
 /* copy "100KB.zip" on ftp server to local dir "testDirRANDOMNUMBER" */
-$kbFile    = $ftp->getFile("100KB.zip")->copy(
+$kbFile    = $ftp->get("100KB.zip")->copy(
 	$local->mkdir("testDir" . random_int(0, 9999999999))
 );
 $randomDir = $kbFile->delete(); // delete downloaded file
-$local     = $randomDir->delete(); // delete testDir
 ```
 ## License
 
