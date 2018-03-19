@@ -22,8 +22,6 @@ class DirectoryTest extends TestCase {
 	public static function tearDownAfterClass() {
 		self::$dir->delete();
 	}
-	public function testInit() {
-	}
 	public function testMkdir() {
 		self::assertDirectoryExists(self::$dir->get("testDirectory")->mkdir()->getPath());
 		self::assertDirectoryExists(self::$dir->get("testDirectory")->mkdir("testMkdir")->getPath());

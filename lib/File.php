@@ -228,6 +228,7 @@ class File implements Countable, ArrayAccess, IteratorAggregate {
 		}
 		$path = Paths::normalize(Paths::appendPath($this->getUrl(), ".."));
 		$file = new File($path);
+		$file->addFilters($this->recursiveFilter, true);
 
 		return $file;
 	}
@@ -268,6 +269,22 @@ class File implements Countable, ArrayAccess, IteratorAggregate {
 		}
 
 		return $this->filter->getCounter();
+	}
+
+	/**
+	 * add (file) filters
+	 *
+	 * @param \common\io\FilterArray $filter
+	 * @param bool                   $recursive
+	 *
+	 * @return File
+	 */
+	private function addFilters($filter, $recursive) {
+		foreach ($filter as $item) {
+			$this->addFilter($item, $recursive);
+		}
+
+		return $this;
 	}
 	/*========================= LISTS =============================*/
 	/**
@@ -335,8 +352,8 @@ class File implements Countable, ArrayAccess, IteratorAggregate {
 		$contents = $this->manager->listContents($this->getUrl(), $recursion);
 
 		foreach ($contents as $file) {
-			$file = Paths::normalize("/".$file["path"]);
-			$add= str_replace($this->getAbsolutePath(),"",$file);
+			$file = Paths::normalize("/" . $file["path"]);
+			$add  = str_replace($this->getAbsolutePath(), "", $file);
 
 
 			$dirs[] = new File(Paths::appendPath($this->getUrl(), $add));
@@ -388,7 +405,7 @@ class File implements Countable, ArrayAccess, IteratorAggregate {
 	 * @return File
 	 */
 	public function get(string $path): File {
-		return new File(Paths::appendPath($this->getUrl(), $path));
+		return (new File(Paths::appendPath($this->getUrl(), $path)))->addFilters($this->recursiveFilter, true);
 	}
 
 	/*========================= FILE =============================*/
@@ -711,4 +728,5 @@ class File implements Countable, ArrayAccess, IteratorAggregate {
 
 		return $content;
 	}
+
 }

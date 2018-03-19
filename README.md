@@ -32,7 +32,6 @@ $webdav = new class(".") extends File {
 };
 
 $local = new File(".");
-
 $local
     ->get("README.md")
     ->copy($webdav->mkdir("testDir"));
