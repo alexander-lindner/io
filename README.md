@@ -43,7 +43,7 @@ Run: `composer require common-libs/io`
 As always load composer in your main file: `require_once("vendor/autoload.php");`.
 
 ## Use it
-Using it is very simple. Just initialize a new php object from ***common\io\Directory***.
+Using it is very simple. Just initialize a new php object from ***common\io\File***.
   ````php
   <?php
   use common\io\File;
